@@ -8,7 +8,7 @@
   "repository": "https://github.com/mission-apprentissage/job-processor.git",
   "author": "Moroine <moroine.bentefrit@beta.gouv.fr>",
   "license": "MIT",
-  "private": false,
+  "packageManager": "yarn@4.0.1",
   "engines": {
     "node": ">=20",
     "npm": "please-use-yarn"
