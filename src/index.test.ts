@@ -3,6 +3,6 @@ import { helloWorld } from "./index.ts";
 
 describe("helloWorld", () => {
   it("should display hello world", () => {
-    expect(helloWorld()).toBe("Hello World");
+    expect(helloWorld("Moroine")).toBe("Hello Moroine");
   });
 });

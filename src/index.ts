@@ -1,3 +1,3 @@
-export function helloWorld() {
-  return "Hello World";
+export function helloWorld(name: string) {
+  return `Hello ${name}`;
 }
