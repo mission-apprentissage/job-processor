@@ -5,7 +5,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "repository": "https://github.com/mission-apprentissage/job-processor.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mission-apprentissage/job-processor.git"
+  },
   "author": "Moroine <moroine.bentefrit@beta.gouv.fr>",
   "license": "MIT",
   "packageManager": "yarn@4.0.1",
