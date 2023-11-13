@@ -1,6 +1,6 @@
 import { updateJob } from "../data/actions.ts";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
-import { JobFn, getLogger, getOptions } from "../setup.ts";
+import { CronDef, JobFn, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,
   runWithAsyncContext,
@@ -11,6 +11,11 @@ import { formatDuration, intervalToDuration } from "date-fns";
 function getJobSimpleFn(job: IJobsSimple): JobFn | null {
   const options = getOptions();
   return options.jobs[job.name] ?? null;
+}
+
+function getCronTaskFn(job: IJobsCronTask): CronDef["handler"] | null {
+  const options = getOptions();
+  return options.crons[job.name]?.handler ?? null;
 }
 
 async function runner(
@@ -41,7 +46,11 @@ async function runner(
       }
       result = await jobFn(job, signal);
     } else {
-      throw new Error("TODO");
+      const jobFn = getCronTaskFn(job);
+      if (!jobFn) {
+        throw new Error("Job function not found");
+      }
+      result = await jobFn(signal);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
