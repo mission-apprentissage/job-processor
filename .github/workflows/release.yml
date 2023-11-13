@@ -29,24 +29,16 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-
-      - uses: actions/cache@v3
-        with:
-          path: |
-            **/node_modules
-            .yarn/install-state.gz
-            .yarn/cache
-          key: yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: yarn-
+          cache: "node"
 
       - name: Install dependencies
-        run: yarn install
+        run: npm ci
 
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
 
       - name: bump and release
-        run: yarn release
+        run: npx release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
