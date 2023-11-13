@@ -10,7 +10,7 @@ interface ILogger {
   error(data: Record<string, unknown>, msg: string | Error): unknown;
 }
 
-export type JobFn = (job: IJobsSimple, signal: AbortSignal) => Promise<void>;
+export type JobFn = (job: IJobsSimple, signal: AbortSignal) => Promise<unknown>;
 
 export type CronDef = {
   cron_string: string;
