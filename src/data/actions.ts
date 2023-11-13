@@ -139,7 +139,16 @@ export const findJobCron = async (
 ): Promise<IJobsCron | null> => {
   const f: Filter<IJobsCron> = { type: "cron", ...filter };
   // @ts-expect-error typescript cannot refine union documents
-  return await getJobCollection().findOne(f, options);
+  return await getJobCollection().findOne<IJobsCron>(f, options);
+};
+
+export const getSimpleJob = async (
+  id: ObjectId,
+): Promise<IJobsSimple | null> => {
+  return await getJobCollection().findOne<IJobsSimple>({
+    _id: id,
+    type: "simple",
+  });
 };
 
 export const findSimpleJob = async (

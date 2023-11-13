@@ -54,3 +54,5 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
 export { initJobProcessor } from "./setup.ts";
 export * from "./data/model.ts";
 export type * from "./data/model.ts";
+
+export { getSimpleJob } from "./data/actions.ts";
