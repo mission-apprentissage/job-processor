@@ -17,7 +17,12 @@ export const ZJobSimple = z
       .nullish()
       .describe("La donnée liéé à la tâche"),
     output: z
-      .record(z.unknown())
+      .object({
+        duration: z.string(),
+        result: z.unknown(),
+        error: z.string().nullable(),
+      })
+      .strict()
       .nullish()
       .describe("Les valeurs de retours du job"),
     scheduled_for: z.date().describe("Date de lancement programmée"),
