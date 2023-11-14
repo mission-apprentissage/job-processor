@@ -1,6 +1,6 @@
 import { updateJob } from "../data/actions.ts";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
-import { CronDef, JobFn, getLogger, getOptions } from "../setup.ts";
+import { CronDef, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,
   runWithAsyncContext,
@@ -8,14 +8,36 @@ import {
 } from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
 
-function getJobSimpleFn(job: IJobsSimple): JobFn | null {
+function getJobSimpleDef(job: IJobsSimple): JobDef | null {
   const options = getOptions();
   return options.jobs[job.name] ?? null;
 }
 
-function getCronTaskFn(job: IJobsCronTask): CronDef["handler"] | null {
+function getCronTaskDef(job: IJobsCronTask): CronDef | null {
   const options = getOptions();
-  return options.crons[job.name]?.handler ?? null;
+  return options.crons[job.name] ?? null;
+}
+
+async function onRunnerExit(
+  startDate: Date,
+  job: IJobsCronTask | IJobsSimple,
+  error: string | null,
+  result: unknown,
+) {
+  const endDate = new Date();
+  const ts = endDate.getTime() - startDate.getTime();
+  const duration =
+    formatDuration(intervalToDuration({ start: startDate, end: endDate })) ||
+    `${ts}ms`;
+
+  const status = error ? "errored" : "finished";
+  await updateJob(job._id, {
+    status: error ? "errored" : "finished",
+    output: { duration, result, error },
+    ended_at: endDate,
+  });
+
+  return { status, duration };
 }
 
 async function runner(
@@ -35,22 +57,22 @@ async function runner(
     status: "running",
     started_at: startDate,
   });
-  let error: Error | undefined = undefined;
+  let error: string | null = null;
   let result: unknown = undefined;
 
   try {
     if (job.type === "simple") {
-      const jobFn = getJobSimpleFn(job);
-      if (!jobFn) {
-        throw new Error("Job function not found");
+      const jobDef = getJobSimpleDef(job);
+      if (!jobDef) {
+        throw new Error("Job not found");
       }
-      result = await jobFn(job, signal);
+      result = await jobDef.handler(job, signal);
     } else {
-      const jobFn = getCronTaskFn(job);
-      if (!jobFn) {
-        throw new Error("Job function not found");
+      const cronDef = getCronTaskDef(job);
+      if (!cronDef) {
+        throw new Error("Cron not found");
       }
-      result = await jobFn(signal);
+      result = await cronDef.handler(signal);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -59,29 +81,17 @@ async function runner(
       { err, writeErrors: err.writeErrors, error: err },
       "job error",
     );
-    error = err?.stack;
+    error = (err as Error)?.stack ?? "Unknown";
   }
 
-  const endDate = new Date();
-  const ts = endDate.getTime() - startDate.getTime();
-  const duration =
-    formatDuration(intervalToDuration({ start: startDate, end: endDate })) ||
-    `${ts}ms`;
-  const status = error ? "errored" : "finished";
-  await updateJob(job._id, {
-    status: error ? "errored" : "finished",
-    output: { duration, result, error },
-    ended_at: endDate,
-  });
+  const { status, duration } = await onRunnerExit(
+    startDate,
+    job,
+    error,
+    result,
+  );
 
   jobLogger.info({ status, duration }, "job ended");
-
-  if (error) {
-    jobLogger.error(
-      { error },
-      error.constructor.name === "EnvVarError" ? error.message : error,
-    );
-  }
 
   return error ? 1 : 0;
 }
