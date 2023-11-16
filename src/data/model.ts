@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { zObjectId } from "zod-mongodb-schema";
 
+// TODO: indexes
+// TODO: workers
+// TODO: workers master election
+// TODO: job Exit
+// TODO: workers crash detection
+// TODO: BAL abort signal & retry
+// TODO: Retry mecanism
+
 const zCronName = z.string().describe("Le nom de la tâche");
 
 export const ZJobSimple = z

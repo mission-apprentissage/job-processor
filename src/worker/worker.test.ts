@@ -1,7 +1,7 @@
 import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { updateJob } from "../data/actions.ts";
 import { executeJob } from "./worker.ts";
-import { getOptions } from "../setup.ts";
+import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { ObjectId } from "mongodb";
 import { IJobsSimple } from "../data/model.ts";
 
@@ -39,15 +39,17 @@ describe("worker", () => {
   });
 
   it("should execute properly on success", async () => {
-    const options = {
-      db: vi.fn(),
+    const options: JobProcessorOptions = {
+      db: vi.fn() as any,
+      logger: vi.fn() as any,
       crons: {},
       jobs: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        hello: async (j: any) => {
-          vi.advanceTimersByTime(2_000);
+        hello: {
+          handler: async (j: any) => {
+            vi.advanceTimersByTime(2_000);
 
-          return `Hello ${j.payload.name}`;
+            return `Hello ${j.payload.name}`;
+          },
         },
       },
     };
@@ -90,7 +92,7 @@ describe("worker", () => {
         output: {
           duration: "2 seconds",
           result: "Hello Moroine",
-          error: undefined,
+          error: null,
         },
         ended_at: expect.anything(),
       },
@@ -110,15 +112,17 @@ describe("worker", () => {
   });
 
   it("should report error on failure", async () => {
-    const options = {
-      db: vi.fn(),
+    const options: JobProcessorOptions = {
+      db: vi.fn() as any,
+      logger: vi.fn() as any,
       crons: {},
       jobs: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        hello: async () => {
-          vi.advanceTimersByTime(2_000);
+        hello: {
+          handler: async () => {
+            vi.advanceTimersByTime(2_000);
 
-          throw new Error("Ooops");
+            throw new Error("Ooops");
+          },
         },
       },
     };
