@@ -1,6 +1,6 @@
 import { Db } from "mongodb";
 import { IJobsCronTask, IJobsSimple } from "./data/model.ts";
-import { configureDbSchemaValidation } from "./data/actions.ts";
+import { configureDb } from "./data/actions.ts";
 
 export interface ILogger {
   debug(msg: string): unknown;
@@ -46,5 +46,5 @@ export function getLogger(): ILogger {
 
 export async function initJobProcessor(opts: JobProcessorOptions) {
   options = opts;
-  await configureDbSchemaValidation();
+  await configureDb();
 }

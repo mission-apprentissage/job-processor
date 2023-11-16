@@ -14,6 +14,17 @@ export function getJobCollection(): Collection<IJob> {
   return getDatabase().collection(collectionName);
 }
 
+async function createIndexes() {
+  await getJobCollection().createIndexes(
+    [
+      { key: { type: 1, scheduled_for: 1 } },
+      { key: { type: 1, status: 1, scheduled_for: 1 } },
+      { key: { type: 1, name: 1 } },
+    ],
+    { background: true },
+  );
+}
+
 async function createCollectionIfDoesNotExist(collectionName: string) {
   const db = getDatabase();
   const collectionsInDb = await db.listCollections().toArray();
@@ -32,7 +43,7 @@ async function createCollectionIfDoesNotExist(collectionName: string) {
   }
 }
 
-export async function configureDbSchemaValidation() {
+async function configureDbSchemaValidation() {
   const db = getDatabase();
   await createCollectionIfDoesNotExist(collectionName);
 
@@ -49,6 +60,11 @@ export async function configureDbSchemaValidation() {
       },
     },
   });
+}
+
+export async function configureDb() {
+  await configureDbSchemaValidation();
+  await createIndexes();
 }
 
 type CreateJobSimpleParams = Pick<
@@ -111,7 +127,7 @@ export const updateJobCron = async (
     updated_at: new Date(),
   };
 
-  await getJobCollection().findOneAndUpdate(id, data);
+  await getJobCollection().findOneAndUpdate({ _id: id }, data);
 };
 
 type CreateJobCronTaskParams = Pick<IJobsCron, "name" | "scheduled_for">;

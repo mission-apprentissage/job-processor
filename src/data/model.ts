@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { zObjectId } from "zod-mongodb-schema";
 
-// TODO: indexes
 // TODO: workers
 // TODO: workers master election
 // TODO: job Exit
