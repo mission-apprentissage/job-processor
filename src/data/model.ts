@@ -77,9 +77,19 @@ export const ZJob = z.discriminatedUnion("type", [
   ZJobCronTask,
 ]);
 
-export type IJob = z.output<typeof ZJob>;
+export const ZWorker = z
+  .object({
+    _id: zObjectId,
+    hostname: z.string().describe("Hostname du worker"),
+    lastSeen: z.date().describe("Date du dernier heartbeat reçu"),
+  })
+  .strict();
+
 export type CronName = z.output<typeof zCronName>;
 
+export type IJob = z.output<typeof ZJob>;
 export type IJobsSimple = z.output<typeof ZJobSimple>;
 export type IJobsCron = z.output<typeof ZJobCron>;
 export type IJobsCronTask = z.output<typeof ZJobCronTask>;
+
+export type IWorker = z.output<typeof ZWorker>;
