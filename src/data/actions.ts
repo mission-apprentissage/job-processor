@@ -204,6 +204,15 @@ export const getSimpleJob = async (
   });
 };
 
+export const getCronTaskJob = async (
+  id: ObjectId,
+): Promise<IJobsCronTask | null> => {
+  return await getJobCollection().findOne<IJobsCronTask>({
+    _id: id,
+    type: "cron_task",
+  });
+};
+
 export const findSimpleJob = async (
   filter: Filter<IJobsSimple>,
   options?: FindOptions,

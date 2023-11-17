@@ -1,4 +1,4 @@
-import { updateJob } from "../data/actions.ts";
+import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
 import { CronDef, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
@@ -38,6 +38,20 @@ async function onRunnerExit(
     ended_at: endDate,
     worker_id: null,
   });
+
+  if (job.type === "simple") {
+    const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
+    if (onJobExited) {
+      const updatedJob = (await getSimpleJob(job._id)) ?? job;
+      await onJobExited(updatedJob);
+    }
+  } else {
+    const onJobExited = getCronTaskDef(job)?.onJobExited ?? null;
+    if (onJobExited) {
+      const updatedJob = (await getCronTaskJob(job._id)) ?? job;
+      await onJobExited(updatedJob);
+    }
+  }
 
   return { status, duration };
 }
