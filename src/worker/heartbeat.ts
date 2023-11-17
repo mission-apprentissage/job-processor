@@ -9,12 +9,52 @@ export const workerId = new ObjectId();
 
 export const heartbeatEvent = new EventEmitter();
 
-export async function startHeartbeat(signal: AbortSignal): Promise<void> {
-  await getWorkerCollection().insertOne({
-    _id: workerId,
-    hostname: os.hostname(),
-    lastSeen: new Date(),
-  });
+async function createWorker() {
+  return getWorkerCollection().updateOne(
+    { _id: workerId },
+    {
+      $set: { lastSeen: new Date() },
+      $setOnInsert: {
+        hostname: os.hostname(),
+      },
+    },
+    { upsert: true },
+  );
+}
+
+const syncHeartbeatContext: { count: number; ctrl: AbortController | null } = {
+  count: 0,
+  ctrl: null,
+};
+
+// Sync heartbeat is used in the context of addJob sync
+// We still need to add workerId to be able to detect crashes
+// So the process will report heartbeat as long as it is running a job
+// But we don't want to multiply heartbeat requests with concurrent addJob
+export async function startSyncHeartbeat(): Promise<() => void> {
+  syncHeartbeatContext.count++;
+
+  if (syncHeartbeatContext.count === 1) {
+    syncHeartbeatContext.ctrl = new AbortController();
+
+    await startHeartbeat(false, syncHeartbeatContext.ctrl.signal);
+  }
+
+  return () => {
+    syncHeartbeatContext.count--;
+    if (syncHeartbeatContext.count === 0) {
+      const ctrl = syncHeartbeatContext.ctrl;
+      syncHeartbeatContext.ctrl = null;
+      ctrl?.abort();
+    }
+  };
+}
+
+export async function startHeartbeat(
+  exitOnError: boolean,
+  signal: AbortSignal,
+): Promise<void> {
+  await createWorker();
 
   const intervalId = setInterval(
     async () => {
@@ -23,7 +63,6 @@ export async function startHeartbeat(signal: AbortSignal): Promise<void> {
           { _id: workerId },
           { $set: { lastSeen: new Date() } },
         );
-        heartbeatEvent.emit("ping");
 
         // We were detected as died by others, just exit abrutly
         // This can be caused by process not releasing the event loop for more than 5min
@@ -33,17 +72,28 @@ export async function startHeartbeat(signal: AbortSignal): Promise<void> {
           );
           throw error;
         }
+
+        heartbeatEvent.emit("ping");
       } catch (error) {
         // Error when processor is aborted are expected
         if (signal.aborted) {
           return;
         }
 
-        getOptions().logger.error(
-          { error },
-          "job-processor: worker has been detected as died",
-        );
+        getOptions().logger.error({ error }, "job-processor: heartbeat failed");
         captureException(error);
+
+        if (!exitOnError) {
+          // Force recreation in case it was removed
+          // And keep trying
+          return createWorker()
+            .then(() => {
+              heartbeatEvent.emit("ping");
+            })
+            .catch(() => {
+              // Silent
+            });
+        }
 
         heartbeatEvent.emit("kill");
         clearInterval(intervalId);

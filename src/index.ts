@@ -3,7 +3,7 @@ import { createJobSimple, pickNextJob } from "./data/actions.ts";
 import { IJobsSimple } from "./data/model.ts";
 import { getLogger } from "./setup.ts";
 import { sleep } from "./utils/sleep.ts";
-import { startHeartbeat } from "./worker/heartbeat.ts";
+import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
 import { executeJob } from "./worker/worker.ts";
 
 type AddJobSimpleParams = Pick<IJobsSimple, "name" | "payload"> &
@@ -23,7 +23,9 @@ export async function addJob({
   });
 
   if (!queued && job) {
-    return executeJob(job, null);
+    const finallyCb = await startSyncHeartbeat();
+
+    return executeJob(job, null).finally(finallyCb);
   }
 
   return 0;
@@ -48,7 +50,7 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
 }
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
-  await startHeartbeat(signal);
+  await startHeartbeat(true, signal);
   await cronsInit();
   await runJobProcessor(signal);
 }
