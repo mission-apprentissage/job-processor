@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        description: Code coverrage token
+        required: true
+jobs:
+  tests:
+    timeout-minutes: 10
+    name: "Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: test
+        run: npm run test:ci
+
+      - name: prettier
+        run: npm run prettier:check
+
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
