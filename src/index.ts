@@ -3,6 +3,7 @@ import { createJobSimple, pickNextJob } from "./data/actions.ts";
 import { IJobsSimple } from "./data/model.ts";
 import { getLogger } from "./setup.ts";
 import { sleep } from "./utils/sleep.ts";
+import { startHeartbeat } from "./worker/heartbeat.ts";
 import { executeJob } from "./worker/worker.ts";
 
 type AddJobSimpleParams = Pick<IJobsSimple, "name" | "payload"> &
@@ -47,6 +48,7 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
 }
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
+  await startHeartbeat(signal);
   await cronsInit();
   await runJobProcessor(signal);
 }

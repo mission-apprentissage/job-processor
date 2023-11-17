@@ -1,45 +1,63 @@
 import { Filter, FindOptions, MatchKeysAndValues, ObjectId } from "mongodb";
-import { IJob, IJobsCron, IJobsCronTask, IJobsSimple, ZJob } from "./model.ts";
+import {
+  IJob,
+  IJobsCron,
+  IJobsCronTask,
+  IJobsSimple,
+  IWorker,
+  ZJob,
+} from "./model.ts";
 import type { Collection, Db, MongoServerError } from "mongodb";
 import { getOptions } from "../setup.ts";
 import { zodToMongoSchema } from "zod-mongodb-schema";
 
-const collectionName = "job_processor.jobs";
+const jobCollectionName = "job_processor.jobs";
+const workerCollectionName = "job_processor.workers";
 
 function getDatabase(): Db {
   return getOptions().db;
 }
 
 export function getJobCollection(): Collection<IJob> {
-  return getDatabase().collection(collectionName);
+  return getDatabase().collection(jobCollectionName);
+}
+
+export function getWorkerCollection(): Collection<IWorker> {
+  return getDatabase().collection(workerCollectionName);
 }
 
 async function createIndexes() {
-  await getJobCollection().createIndexes(
-    [
-      { key: { type: 1, scheduled_for: 1 } },
-      { key: { type: 1, status: 1, scheduled_for: 1 } },
-      { key: { type: 1, name: 1 } },
-      {
-        key: { ended_at: 1 },
-        // 90 days
-        expireAfterSeconds: 3600 * 24 * 90,
-      },
-    ],
-    { background: true },
-  );
+  await Promise.allSettled([
+    getJobCollection().createIndexes(
+      [
+        { key: { type: 1, scheduled_for: 1 } },
+        { key: { type: 1, status: 1, scheduled_for: 1 } },
+        { key: { type: 1, name: 1 } },
+        {
+          key: { ended_at: 1 },
+          // 90 days
+          expireAfterSeconds: 3600 * 24 * 90,
+        },
+      ],
+      { background: true },
+    ),
+    getWorkerCollection().createIndexes(
+      [{ key: { lastSeen: 1 }, expireAfterSeconds: 300 }],
+      { background: true },
+    ),
+  ]);
 }
 
-async function createCollectionIfDoesNotExist(collectionName: string) {
+async function createCollectionIfDoesNotExist(jobCollectionName: string) {
   const db = getDatabase();
   const collectionsInDb = await db.listCollections().toArray();
   const collectionExistsInDb = collectionsInDb
     .map(({ name }) => name)
-    .includes(collectionName);
+    .includes(jobCollectionName);
 
   if (!collectionExistsInDb) {
     try {
-      await db.createCollection(collectionName);
+      await db.createCollection(jobCollectionName);
     } catch (err) {
       if ((err as MongoServerError).codeName !== "NamespaceExists") {
         throw err;
@@ -50,17 +68,17 @@ async function createCollectionIfDoesNotExist(collectionName: string) {
 
 async function configureDbSchemaValidation() {
   const db = getDatabase();
-  await createCollectionIfDoesNotExist(collectionName);
+  await createCollectionIfDoesNotExist(jobCollectionName);
 
   const convertedSchema = zodToMongoSchema(ZJob);
 
   await db.command({
-    collMod: collectionName,
+    collMod: jobCollectionName,
     validationLevel: "strict",
     validationAction: "error",
     validator: {
       $jsonSchema: {
-        title: `${collectionName} validation schema`,
+        title: `${jobCollectionName} validation schema`,
         ...convertedSchema,
       },
     },

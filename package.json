@@ -23,7 +23,9 @@
     "prettier:check": "prettier --check -u .",
     "release": "semantic-release",
     "prepare": "husky install",
+    "pretest": "docker compose up -d --wait",
     "test": "vitest",
+    "posttest": "docker compose down -v",
     "test:ci": "npm run -- test --run",
     "build": "tsup-node --env.NODE_ENV production",
     "typecheck": "tsc --noEmit"
