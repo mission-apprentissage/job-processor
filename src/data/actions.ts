@@ -10,6 +10,7 @@ import {
 import type { Collection, Db, MongoServerError } from "mongodb";
 import { getOptions } from "../setup.ts";
 import { zodToMongoSchema } from "zod-mongodb-schema";
+import { workerId } from "../worker/heartbeat.ts";
 
 const jobCollectionName = "job_processor.jobs";
 const workerCollectionName = "job_processor.workers";
@@ -24,6 +25,16 @@ export function getJobCollection(): Collection<IJob> {
 
 export function getWorkerCollection(): Collection<IWorker> {
   return getDatabase().collection(workerCollectionName);
+}
+
+async function executeMigrations() {
+  // This migration is light and can safely be executed many times
+  // We probably need in future a proper version field stored to manage migrations
+  await getJobCollection().updateMany(
+    { type: { $in: ["cron_task", "simple"] }, worker_id: { $exists: false } },
+    { $set: { worker_id: null } },
+    { bypassDocumentValidation: true },
+  );
 }
 
 async function createIndexes() {
@@ -86,6 +97,7 @@ async function configureDbSchemaValidation() {
 }
 
 export async function configureDb() {
+  await executeMigrations();
   await configureDbSchemaValidation();
   await createIndexes();
 }
@@ -105,12 +117,13 @@ export const createJobSimple = async ({
     _id: new ObjectId(),
     name,
     type: "simple",
-    status: sync ? "will_start" : "pending",
+    status: sync ? "running" : "pending",
     payload,
     updated_at: new Date(),
     created_at: new Date(),
     scheduled_for,
     sync,
+    worker_id: null,
   };
   await getJobCollection().insertOne(job);
   return job;
@@ -167,6 +180,7 @@ export const createJobCronTask = async ({
     updated_at: new Date(),
     created_at: new Date(),
     scheduled_for,
+    worker_id: null,
   };
   await getJobCollection().insertOne(job);
   return job;
@@ -224,7 +238,7 @@ export function pickNextJob(): Promise<IJobsCronTask | IJobsSimple | null> {
       status: "pending",
       scheduled_for: { $lte: new Date() },
     },
-    { $set: { status: "will_start" } },
+    { $set: { status: "running", worker_id: workerId } },
     { sort: { scheduled_for: 1 }, includeResultMetadata: false },
   ) as Promise<IJobsCronTask | IJobsSimple | null>;
 }

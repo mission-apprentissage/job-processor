@@ -5,13 +5,13 @@ import { getOptions } from "../setup.ts";
 import { captureException } from "@sentry/node";
 import { EventEmitter } from "node:events";
 
+export const workerId = new ObjectId();
+
 export const heartbeatEvent = new EventEmitter();
 
-export async function startHeartbeat(signal: AbortSignal): Promise<ObjectId> {
-  const _id = new ObjectId();
-
+export async function startHeartbeat(signal: AbortSignal): Promise<void> {
   await getWorkerCollection().insertOne({
-    _id,
+    _id: workerId,
     hostname: os.hostname(),
     lastSeen: new Date(),
   });
@@ -20,7 +20,7 @@ export async function startHeartbeat(signal: AbortSignal): Promise<ObjectId> {
     async () => {
       try {
         const result = await getWorkerCollection().updateOne(
-          { _id },
+          { _id: workerId },
           { $set: { lastSeen: new Date() } },
         );
         heartbeatEvent.emit("ping");
@@ -61,9 +61,7 @@ export async function startHeartbeat(signal: AbortSignal): Promise<ObjectId> {
   signal.addEventListener("abort", async () => {
     clearInterval(intervalId);
 
-    await getWorkerCollection().deleteOne({ _id });
+    await getWorkerCollection().deleteOne({ _id: workerId });
     heartbeatEvent.emit("stop");
   });
-
-  return _id;
 }

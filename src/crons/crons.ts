@@ -46,7 +46,7 @@ export async function cronsInit() {
   });
   await getJobCollection().deleteMany({
     name: { $nin: CRONS.map((c) => c.name) },
-    status: { $in: ["pending", "will_start"] },
+    status: "pending",
     type: "cron_task",
   });
 
@@ -69,7 +69,7 @@ export async function cronsInit() {
       await updateJobCron(cronJob._id, cron.cron_string);
       await getJobCollection().deleteMany({
         name: cronJob.name,
-        status: { $in: ["pending", "will_start"] },
+        status: "pending",
         type: "cron_task",
       });
       schedulerRequired = true;

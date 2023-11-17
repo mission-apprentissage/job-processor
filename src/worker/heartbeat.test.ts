@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
-import { heartbeatEvent, startHeartbeat } from "./heartbeat.ts";
+import { heartbeatEvent, startHeartbeat, workerId } from "./heartbeat.ts";
 import { getWorkerCollection } from "../data/actions.ts";
 import { IWorker } from "../index.ts";
 
@@ -55,7 +55,7 @@ describe("heartbeat", () => {
 
   it("should manage heartbeat lifecycle", async () => {
     const abortController = new AbortController();
-    const workerId = await startHeartbeat(abortController.signal);
+    await startHeartbeat(abortController.signal);
     expect(workerId).toEqual(expect.any(ObjectId));
 
     // Once started, it should be referenced in worker collection without affecting other workers
@@ -116,7 +116,7 @@ describe("heartbeat", () => {
 
   it("should exit when heartbeat failed", async () => {
     const abortController = new AbortController();
-    const workerId = await startHeartbeat(abortController.signal);
+    await startHeartbeat(abortController.signal);
     expect(workerId).toEqual(expect.any(ObjectId));
 
     await getWorkerCollection().deleteOne({ _id: workerId });
