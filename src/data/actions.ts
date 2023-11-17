@@ -20,6 +20,11 @@ async function createIndexes() {
       { key: { type: 1, scheduled_for: 1 } },
       { key: { type: 1, status: 1, scheduled_for: 1 } },
       { key: { type: 1, name: 1 } },
+      {
+        key: { ended_at: 1 },
+        // 90 days
+        expireAfterSeconds: 3600 * 24 * 90,
+      },
     ],
     { background: true },
   );
