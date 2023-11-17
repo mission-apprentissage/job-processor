@@ -4,6 +4,7 @@ import { executeJob } from "./worker.ts";
 import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { ObjectId } from "mongodb";
 import { IJobsSimple } from "../data/model.ts";
+import { workerId } from "./heartbeat.ts";
 
 vi.mock("../setup.ts", async (importOriginal) => {
   const mod = await importOriginal();
@@ -68,6 +69,7 @@ describe("worker", () => {
       ended_at: null,
       updated_at: now,
       created_at: now,
+      worker_id: null,
     };
 
     const jobUpdates: Partial<IJobsSimple>[] = [];
@@ -86,7 +88,7 @@ describe("worker", () => {
 
     await expect.soft(executeJob(job, abortController.signal)).resolves.toBe(0);
     expect(jobUpdates).toEqual([
-      { status: "running", started_at: expect.anything() },
+      { status: "running", started_at: expect.anything(), worker_id: workerId },
       {
         status: "finished",
         output: {
@@ -95,6 +97,7 @@ describe("worker", () => {
           error: null,
         },
         ended_at: expect.anything(),
+        worker_id: null,
       },
     ]);
     expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(
@@ -141,6 +144,7 @@ describe("worker", () => {
       ended_at: null,
       updated_at: now,
       created_at: now,
+      worker_id: null,
     };
 
     const jobUpdates: Partial<IJobsSimple>[] = [];
@@ -159,7 +163,7 @@ describe("worker", () => {
 
     expect.soft(await executeJob(job, abortController.signal)).toBe(1);
     expect(jobUpdates).toEqual([
-      { status: "running", started_at: expect.anything() },
+      { status: "running", started_at: expect.anything(), worker_id: workerId },
       {
         status: "errored",
         output: {
@@ -168,6 +172,7 @@ describe("worker", () => {
           error: expect.stringContaining("Error: Ooops"),
         },
         ended_at: expect.anything(),
+        worker_id: null,
       },
     ]);
     expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(

@@ -7,6 +7,7 @@ import {
   getCurrentHub,
 } from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { workerId } from "./heartbeat.ts";
 
 function getJobSimpleDef(job: IJobsSimple): JobDef | null {
   const options = getOptions();
@@ -35,6 +36,7 @@ async function onRunnerExit(
     status: error ? "errored" : "finished",
     output: { duration, result, error },
     ended_at: endDate,
+    worker_id: null,
   });
 
   return { status, duration };
@@ -56,6 +58,7 @@ async function runner(
   await updateJob(job._id, {
     status: "running",
     started_at: startDate,
+    worker_id: workerId,
   });
   let error: string | null = null;
   let result: unknown = undefined;
