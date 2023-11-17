@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0.2-focal
+    ports:
+      - "127.0.0.1:27018:27017"
+    healthcheck:
+      test:
+        ["CMD", "mongosh", "--eval", '''db.runCommand("ping").ok''', "--quiet"]
+      interval: 2s
+      timeout: 5s
+      retries: 12
+      start_period: 0s
