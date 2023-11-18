@@ -43,6 +43,7 @@ async function createIndexes() {
       [
         { key: { type: 1, scheduled_for: 1 } },
         { key: { type: 1, status: 1, scheduled_for: 1 } },
+        { key: { type: 1, status: 1, worker_id: 1, started_at: 1 } },
         { key: { type: 1, name: 1 } },
         {
           key: { ended_at: 1 },
@@ -179,6 +180,8 @@ export const createJobCronTask = async ({
     status: "pending",
     updated_at: new Date(),
     created_at: new Date(),
+    started_at: null,
+    ended_at: null,
     scheduled_for,
     worker_id: null,
   };

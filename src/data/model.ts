@@ -1,12 +1,8 @@
 import { z } from "zod";
 import { zObjectId } from "zod-mongodb-schema";
 
-// TODO: workers
-// TODO: workers master election
-// TODO: job Exit
-// TODO: workers crash detection
 // TODO: BAL abort signal & retry
-// TODO: Retry mecanism
+// TODO: Resumable mecanism
 
 const zCronName = z.string().describe("Le nom de la tâche");
 

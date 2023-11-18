@@ -1,4 +1,4 @@
-import { cronsInit } from "./crons/crons.ts";
+import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import {
   createJobSimple,
   detectExitedJobs,
@@ -61,7 +61,17 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   await startHeartbeat(true, signal);
+
+  if (signal.aborted) return;
+
   await cronsInit();
+
+  if (signal.aborted) return;
+
+  await startCronScheduler(signal);
+
+  if (signal.aborted) return;
+
   await runJobProcessor(signal);
 }
 

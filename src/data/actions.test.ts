@@ -14,7 +14,9 @@ import { workerId } from "../worker/heartbeat.ts";
 let client: MongoClient | null;
 
 beforeAll(async () => {
-  client = new MongoClient("mongodb://127.0.0.1:27018");
+  client = new MongoClient(
+    `mongodb://127.0.0.1:27018/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
+  );
   await client.connect();
   await initJobProcessor({
     logger: {
