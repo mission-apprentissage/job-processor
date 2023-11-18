@@ -1,6 +1,6 @@
 import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { updateJob, getSimpleJob, getCronTaskJob } from "../data/actions.ts";
-import { executeJob } from "./worker.ts";
+import { executeJob, reportJobCrash } from "./worker.ts";
 import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { ObjectId } from "mongodb";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
@@ -417,6 +417,292 @@ describe("executeJob", () => {
         ...job,
         ...jobUpdates[0],
         ...jobUpdates[1],
+      });
+    });
+  });
+});
+
+describe("reportJobCrash", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("when simple job", () => {
+    describe("without onJobExited", () => {
+      it("should do nothing", async () => {
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {},
+          jobs: {
+            hello: {
+              handler: async (j: any) => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello ${j.payload.name}`;
+              },
+            },
+          },
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsSimple = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "simple",
+          status: "errored",
+          sync: false,
+          payload: { name: "Moroine" },
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+      });
+    });
+
+    describe("with onJobExited", () => {
+      it("should call onJobExited", async () => {
+        const onJobExited = vi.fn();
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {},
+          jobs: {
+            hello: {
+              handler: async (j: any) => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello ${j.payload.name}`;
+              },
+              onJobExited,
+            },
+          },
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsSimple = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "simple",
+          status: "errored",
+          sync: false,
+          payload: { name: "Moroine" },
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+        expect(onJobExited).toHaveBeenCalledOnce();
+        expect(onJobExited).toHaveBeenCalledWith(job);
+      });
+
+      it("should not throw when onJobExited error", async () => {
+        const onJobExited = vi.fn().mockRejectedValue(new Error("Ooops"));
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {},
+          jobs: {
+            hello: {
+              handler: async (j: any) => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello ${j.payload.name}`;
+              },
+              onJobExited,
+            },
+          },
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsSimple = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "simple",
+          status: "errored",
+          sync: false,
+          payload: { name: "Moroine" },
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+        expect(onJobExited).toHaveBeenCalledOnce();
+        expect(onJobExited).toHaveBeenCalledWith(job);
+      });
+    });
+  });
+
+  describe("when simple job", () => {
+    describe("without onJobExited", () => {
+      it("should do nothing", async () => {
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {
+            hello: {
+              cron_string: "*",
+              handler: async () => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello`;
+              },
+            },
+          },
+          jobs: {},
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsCronTask = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "cron_task",
+          status: "errored",
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+      });
+    });
+
+    describe("with onJobExited", () => {
+      it("should call onJobExited", async () => {
+        const onJobExited = vi.fn();
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {
+            hello: {
+              cron_string: "*",
+              handler: async () => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello`;
+              },
+              onJobExited,
+            },
+          },
+          jobs: {},
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsCronTask = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "cron_task",
+          status: "errored",
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+        expect(onJobExited).toHaveBeenCalledOnce();
+        expect(onJobExited).toHaveBeenCalledWith(job);
+      });
+
+      it("should not throw when onJobExited error", async () => {
+        const onJobExited = vi.fn().mockRejectedValue(new Error("Ooops"));
+        const options: JobProcessorOptions = {
+          db: vi.fn() as any,
+          logger: vi.fn() as any,
+          crons: {
+            hello: {
+              cron_string: "*",
+              handler: async () => {
+                vi.advanceTimersByTime(2_000);
+
+                return `Hello`;
+              },
+              onJobExited,
+            },
+          },
+          jobs: {},
+        };
+        (getOptions as Mock).mockReturnValue(options);
+
+        const now = new Date();
+
+        const job: IJobsCronTask = {
+          _id: new ObjectId(),
+          name: "hello",
+          type: "cron_task",
+          status: "errored",
+          output: {
+            duration: "--",
+            result: null,
+            error: "Worker crashed unexpectly",
+          },
+          scheduled_for: new Date(now.getTime() - 900_000),
+          started_at: new Date(now.getTime() - 900_000),
+          ended_at: now,
+          updated_at: now,
+          created_at: new Date(now.getTime() - 900_000),
+          worker_id: null,
+        };
+
+        await expect(reportJobCrash(job)).resolves.toBeUndefined();
+        expect(onJobExited).toHaveBeenCalledOnce();
+        expect(onJobExited).toHaveBeenCalledWith(job);
       });
     });
   });

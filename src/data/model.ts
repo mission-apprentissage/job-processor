@@ -71,6 +71,15 @@ export const ZJobCronTask = z
     ended_at: z.date().nullish().describe("Date de fin d'execution"),
     updated_at: z.date().describe("Date de mise à jour en base de données"),
     created_at: z.date().describe("Date d'ajout en base de données"),
+    output: z
+      .object({
+        duration: z.string(),
+        result: z.unknown(),
+        error: z.string().nullable(),
+      })
+      .strict()
+      .nullish()
+      .describe("Les valeurs de retours du job"),
     worker_id: zObjectId
       .nullable()
       .describe("Worker ID handling the job when running"),

@@ -68,7 +68,7 @@ async function runner(
   });
 
   jobLogger.info("job started");
-  const startDate = new Date();
+  const startDate = job.started_at ?? new Date();
   await updateJob(job._id, {
     status: "running",
     started_at: startDate,
@@ -141,4 +141,31 @@ export function executeJob(
       transaction?.finish();
     }
   });
+}
+
+export async function reportJobCrash(
+  job: IJobsCronTask | IJobsSimple,
+): Promise<void> {
+  try {
+    if (job.type === "simple") {
+      const jobDef = getJobSimpleDef(job);
+      if (!jobDef) {
+        throw new Error("Job not found");
+      }
+      await jobDef.onJobExited?.(job);
+    } else {
+      const cronDef = getCronTaskDef(job);
+      if (!cronDef) {
+        throw new Error("Cron not found");
+      }
+      await cronDef.onJobExited?.(job);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    captureException(err);
+    getLogger().error(
+      { err, writeErrors: err.writeErrors, error: err },
+      "reportJobCrash error",
+    );
+  }
 }

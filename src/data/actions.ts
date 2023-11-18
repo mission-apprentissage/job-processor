@@ -240,14 +240,52 @@ export const updateJob = async (
   );
 };
 
-export function pickNextJob(): Promise<IJobsCronTask | IJobsSimple | null> {
+export async function pickNextJob(): Promise<
+  IJobsCronTask | IJobsSimple | null
+> {
   return getJobCollection().findOneAndUpdate(
     {
       type: { $in: ["simple", "cron_task"] },
       status: "pending",
       scheduled_for: { $lte: new Date() },
     },
-    { $set: { status: "running", worker_id: workerId } },
+    {
+      $set: { status: "running", worker_id: workerId, started_at: new Date() },
+    },
     { sort: { scheduled_for: 1 }, includeResultMetadata: false },
+  ) as Promise<IJobsCronTask | IJobsSimple | null>;
+}
+
+export async function detectExitedJobs(): Promise<
+  IJobsCronTask | IJobsSimple | null
+> {
+  const now = new Date();
+  const activeWorkerIds = await getWorkerCollection()
+    .find({}, { projection: { _id: 1 } })
+    .toArray();
+
+  // Any job started more than 5min ago is garanted to be in active worker if not dead
+  // We need to be careful in case a worker register just after we get active workers
+  return getJobCollection().findOneAndUpdate(
+    {
+      type: { $in: ["simple", "cron_task"] },
+      status: "running",
+      worker_id: { $nin: activeWorkerIds },
+      started_at: { $lt: new Date(now.getTime() - 300_000) },
+    },
+    {
+      $set: {
+        status: "errored",
+        output: {
+          duration: "--",
+          result: null,
+          error: "Worker crashed unexpectly",
+        },
+        ended_at: now,
+      },
+    },
+    {
+      returnDocument: "after",
+    },
   ) as Promise<IJobsCronTask | IJobsSimple | null>;
 }
