@@ -82,8 +82,9 @@ describe("startHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(1);
 
     // Execute next interval
+    let onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     workers = await getWorkerCollection().find({}).toArray();
@@ -97,9 +98,7 @@ describe("startHeartbeat", () => {
     });
 
     // Execute next interval
-    const onPing = new Promise((resolve) =>
-      heartbeatEvent.once("ping", resolve),
-    );
+    onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
     await onPing;
 
@@ -132,12 +131,11 @@ describe("startHeartbeat", () => {
     await getWorkerCollection().deleteOne({ _id: workerId });
 
     // Execute next interval
+    const onKill = new Promise((resolve) => {
+      heartbeatEvent.once("kill", resolve);
+    });
     await vi.runOnlyPendingTimersAsync();
-    await expect(
-      new Promise((resolve) => {
-        heartbeatEvent.once("kill", resolve);
-      }),
-    ).resolves.toBeUndefined();
+    await expect(onKill).resolves.toBeUndefined();
     expect(vi.getTimerCount()).toBe(0);
   });
 

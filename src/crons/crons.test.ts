@@ -316,10 +316,11 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksNow);
 
       // At now + 1min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      let onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersToNextTimerAsync();
+      await onUpdate;
       expect(new Date()).toEqual(in1Min);
       expect(vi.getTimerCount()).toBe(1);
       expect(
@@ -334,10 +335,11 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksNow);
 
       // At now + 2min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersToNextTimerAsync();
+      await onUpdate;
       expect(new Date()).toEqual(in2Min);
       expect(vi.getTimerCount()).toBe(1);
       expect(
@@ -352,10 +354,11 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksIn2Min);
 
       // At now + 3min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersToNextTimerAsync();
+      await onUpdate;
       expect(new Date()).toEqual(in3Min);
       expect(vi.getTimerCount()).toBe(1);
       expect(
@@ -395,10 +398,12 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksNow);
 
       // At now + 1min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      let onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersByTimeAsync(60_000);
+      await onUpdate;
+
       expect(new Date()).toEqual(in1Min);
       expect(vi.getTimerCount()).toBe(5);
       expect(
@@ -413,10 +418,12 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksNow);
 
       // At now + 2min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersByTimeAsync(60_000);
+      await onUpdate;
+
       expect(new Date()).toEqual(in2Min);
       expect(vi.getTimerCount()).toBe(5);
       expect(
@@ -431,10 +438,12 @@ describe("startCronScheduler", () => {
       ).toEqual(expectedTasksIn2Min);
 
       // At now + 3min
-      await vi.advanceTimersToNextTimerAsync();
-      await new Promise((resolve) =>
+      onUpdate = new Promise((resolve) =>
         cronSchedulerEvent.once("updated", resolve),
       );
+      await vi.advanceTimersByTimeAsync(60_000);
+      await onUpdate;
+
       expect(new Date()).toEqual(in3Min);
       expect(vi.getTimerCount()).toBe(5);
       expect(
