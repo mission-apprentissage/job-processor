@@ -295,6 +295,7 @@ export async function detectExitedJobs(): Promise<
     },
     {
       returnDocument: "after",
+      includeResultMetadata: false,
     },
   ) as Promise<IJobsCronTask | IJobsSimple | null>;
 }
