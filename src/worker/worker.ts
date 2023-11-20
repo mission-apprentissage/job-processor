@@ -61,18 +61,22 @@ function getJobAbortedCb(
   startDate: Date,
 ): () => Promise<void> {
   return async () => {
-    // As soon as the process is abort, we update job status
-    // We still wait for completion of the handler
-    // but in case it didn't return in time, we still have a better status
-    const resumable =
-      job.type === "simple"
-        ? getJobSimpleDef(job)?.resumable
-        : getCronTaskDef(job)?.resumable;
+    try {
+      // As soon as the process is abort, we update job status
+      // We still wait for completion of the handler
+      // but in case it didn't return in time, we still have a better status
+      const resumable =
+        job.type === "simple"
+          ? getJobSimpleDef(job)?.resumable
+          : getCronTaskDef(job)?.resumable;
 
-    if (resumable === true) {
-      await updateJob(job._id, { status: "paused", worker_id: null });
-    } else {
-      await onRunnerExit(startDate, job, "Interrupted", null);
+      if (resumable === true) {
+        await updateJob(job._id, { status: "paused", worker_id: null });
+      } else {
+        await onRunnerExit(startDate, job, "Interrupted", null);
+      }
+    } catch (err) {
+      captureException(err);
     }
   };
 }

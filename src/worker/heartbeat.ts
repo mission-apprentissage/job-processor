@@ -34,18 +34,20 @@ const syncHeartbeatContext: { count: number; ctrl: AbortController | null } = {
 export async function startSyncHeartbeat(): Promise<() => void> {
   syncHeartbeatContext.count++;
 
+  let teardown: null | (() => Promise<null>) = null;
   if (syncHeartbeatContext.count === 1) {
     syncHeartbeatContext.ctrl = new AbortController();
 
-    await startHeartbeat(false, syncHeartbeatContext.ctrl.signal);
+    teardown = await startHeartbeat(false, syncHeartbeatContext.ctrl.signal);
   }
 
-  return () => {
+  return async () => {
     syncHeartbeatContext.count--;
     if (syncHeartbeatContext.count === 0) {
       const ctrl = syncHeartbeatContext.ctrl;
       syncHeartbeatContext.ctrl = null;
       ctrl?.abort();
+      await teardown?.();
     }
   };
 }
@@ -53,7 +55,7 @@ export async function startSyncHeartbeat(): Promise<() => void> {
 export async function startHeartbeat(
   exitOnError: boolean,
   signal: AbortSignal,
-): Promise<void> {
+): Promise<() => Promise<null>> {
   await createWorker();
 
   const intervalId = setInterval(
@@ -108,10 +110,17 @@ export async function startHeartbeat(
     30_000,
   ).unref();
 
-  signal.addEventListener("abort", async () => {
-    clearInterval(intervalId);
+  const teardownPromise: Promise<null> = new Promise((resolve) => {
+    signal.addEventListener("abort", async () => {
+      clearInterval(intervalId);
 
-    await getWorkerCollection().deleteOne({ _id: workerId });
-    heartbeatEvent.emit("stop");
+      await getWorkerCollection()
+        .deleteOne({ _id: workerId })
+        .catch(captureException);
+      heartbeatEvent.emit("stop");
+      resolve(null);
+    });
   });
+
+  return () => teardownPromise;
 }
