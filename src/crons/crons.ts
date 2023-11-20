@@ -1,25 +1,32 @@
 import cronParser from "cron-parser";
 import { CronDef, getLogger, getOptions } from "../setup.ts";
 import {
-  createJobCron,
   createJobCronTask,
-  findJobCron,
   findJobs,
   getJobCollection,
-  updateJob,
-  updateJobCron,
 } from "../data/actions.ts";
 import { IJobsCron } from "../data/model.ts";
+import { ObjectId } from "mongodb";
 import { captureException } from "@sentry/node";
+import { EventEmitter } from "node:events";
 
 function parseCronString(
+  now: Date,
   cronString: string,
   options: { currentDate: string } | object = {},
-) {
-  return cronParser.parseExpression(cronString, {
+): Date {
+  const iterator = cronParser.parseExpression(cronString, {
     tz: "Europe/Paris",
     ...options,
   });
+
+  const next = iterator.next().toDate();
+
+  if (next.getTime() >= now.getTime()) {
+    return next;
+  }
+
+  return now;
 }
 
 interface Cron extends CronDef {
@@ -36,8 +43,6 @@ function getCrons(): Cron[] {
 export async function cronsInit() {
   getLogger().info(`Crons - initialise crons in DB`);
 
-  let schedulerRequired = false;
-
   const CRONS = getCrons();
 
   await getJobCollection().deleteMany({
@@ -51,73 +56,125 @@ export async function cronsInit() {
   });
 
   for (const cron of CRONS) {
-    const cronJob = await findJobCron({
-      name: cron.name,
-    });
+    // Atomic operation to prevent concurrency conflict
 
-    if (!cronJob) {
-      await createJobCron({
+    const now = new Date();
+    const result = await getJobCollection().findOneAndUpdate(
+      {
         name: cron.name,
-        cron_string: cron.cron_string,
-        scheduled_for: new Date(),
-      });
-      schedulerRequired = true;
-    } else if (
-      cronJob.type === "cron" &&
-      cronJob.cron_string !== cron.cron_string
-    ) {
-      await updateJobCron(cronJob._id, cron.cron_string);
+      },
+      {
+        $set: {
+          cron_string: cron.cron_string,
+        },
+        $setOnInsert: {
+          _id: new ObjectId(),
+          name: cron.name,
+          type: "cron",
+          status: "active",
+          updated_at: now,
+          created_at: now,
+          scheduled_for: now,
+        },
+      },
+      {
+        returnDocument: "before",
+        upsert: true,
+      },
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const oldJob: IJobsCron | null = result as any;
+
+    if (oldJob === null) {
+      // upsert is not atomic, make sure we didn't created a duplicate
+      const createdCrons = await getJobCollection()
+        .find(
+          {
+            name: cron.name,
+          },
+          {
+            sort: { _id: 1 },
+          },
+        )
+        .toArray();
+
+      if (createdCrons.length > 1 && createdCrons[0]) {
+        // Just keep the first one
+        await getJobCollection().deleteMany({
+          name: cron.name,
+          _id: { $ne: createdCrons[0]._id },
+        });
+      }
+    }
+
+    if (oldJob !== null && oldJob.cron_string !== cron.cron_string) {
+      await getJobCollection().updateOne(
+        { _id: oldJob._id },
+        { $set: { scheduled_for: now, updated_at: now } },
+      );
       await getJobCollection().deleteMany({
-        name: cronJob.name,
+        name: cron.name,
         status: "pending",
         type: "cron_task",
       });
-      schedulerRequired = true;
     }
-  }
-
-  if (schedulerRequired) {
-    await cronsScheduler();
   }
 }
 
-export async function cronsScheduler(): Promise<void> {
+export const cronSchedulerEvent = new EventEmitter();
+
+export async function runCronsScheduler(): Promise<void> {
   getLogger().info(`Crons - Check and run crons`);
 
+  const now = new Date();
   const crons = await findJobs<IJobsCron>(
     {
       type: "cron",
-      scheduled_for: { $lte: new Date() },
+      scheduled_for: { $lte: now },
     },
     { sort: { scheduled_for: 1 } },
   );
 
   for (const cron of crons) {
-    const next = parseCronString(cron.cron_string ?? "", {
+    const next = parseCronString(now, cron.cron_string ?? "", {
       currentDate: cron.scheduled_for,
-    }).next();
-    await createJobCronTask({
-      name: cron.name,
-      scheduled_for: next.toDate(),
     });
 
-    await updateJob(cron._id, {
-      scheduled_for: next.toDate(),
-    });
-  }
-  const cron = await findJobCron({}, { sort: { scheduled_for: 1 } });
+    // Ensure no concurrent worker scheduled this cron already
+    const result = await getJobCollection().updateOne(
+      { _id: cron._id, scheduled_for: cron.scheduled_for },
+      { $set: { scheduled_for: next } },
+    );
 
-  if (!cron) return;
-
-  const execCronScheduler = async () => {
-    try {
-      await cronsScheduler();
-    } catch (err) {
-      captureException(err);
-      setTimeout(execCronScheduler, 1_000);
+    // Otherwise is already scheduled by another worker
+    if (result.modifiedCount > 0) {
+      await createJobCronTask({
+        name: cron.name,
+        scheduled_for: next,
+      });
     }
-  };
+  }
 
-  // No need to block
-  setTimeout(execCronScheduler, cron.scheduled_for.getSeconds() + 1).unref();
+  cronSchedulerEvent.emit("updated");
+}
+
+export async function startCronScheduler(signal: AbortSignal) {
+  const CRONS = getCrons();
+  if (CRONS.length === 0) return;
+
+  await runCronsScheduler();
+  const intervalID = setInterval(async () => {
+    try {
+      await runCronsScheduler();
+    } catch (err) {
+      if (!signal.aborted) {
+        captureException(err);
+      }
+    }
+  }, 60_000).unref();
+
+  signal.addEventListener("abort", () => {
+    clearInterval(intervalID);
+  });
 }

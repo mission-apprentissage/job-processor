@@ -1,4 +1,4 @@
-import { updateJob } from "../data/actions.ts";
+import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
 import { CronDef, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
@@ -39,6 +39,20 @@ async function onRunnerExit(
     worker_id: null,
   });
 
+  if (job.type === "simple") {
+    const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
+    if (onJobExited) {
+      const updatedJob = (await getSimpleJob(job._id)) ?? job;
+      await onJobExited(updatedJob);
+    }
+  } else {
+    const onJobExited = getCronTaskDef(job)?.onJobExited ?? null;
+    if (onJobExited) {
+      const updatedJob = (await getCronTaskJob(job._id)) ?? job;
+      await onJobExited(updatedJob);
+    }
+  }
+
   return { status, duration };
 }
 
@@ -54,7 +68,7 @@ async function runner(
   });
 
   jobLogger.info("job started");
-  const startDate = new Date();
+  const startDate = job.started_at ?? new Date();
   await updateJob(job._id, {
     status: "running",
     started_at: startDate,
@@ -127,4 +141,31 @@ export function executeJob(
       transaction?.finish();
     }
   });
+}
+
+export async function reportJobCrash(
+  job: IJobsCronTask | IJobsSimple,
+): Promise<void> {
+  try {
+    if (job.type === "simple") {
+      const jobDef = getJobSimpleDef(job);
+      if (!jobDef) {
+        throw new Error("Job not found");
+      }
+      await jobDef.onJobExited?.(job);
+    } else {
+      const cronDef = getCronTaskDef(job);
+      if (!cronDef) {
+        throw new Error("Cron not found");
+      }
+      await cronDef.onJobExited?.(job);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    captureException(err);
+    getLogger().error(
+      { err, writeErrors: err.writeErrors, error: err },
+      "reportJobCrash error",
+    );
+  }
 }

@@ -1,10 +1,14 @@
-import { cronsInit } from "./crons/crons.ts";
-import { createJobSimple, pickNextJob } from "./data/actions.ts";
+import { cronsInit, startCronScheduler } from "./crons/crons.ts";
+import {
+  createJobSimple,
+  detectExitedJobs,
+  pickNextJob,
+} from "./data/actions.ts";
 import { IJobsSimple } from "./data/model.ts";
 import { getLogger } from "./setup.ts";
 import { sleep } from "./utils/sleep.ts";
-import { startHeartbeat } from "./worker/heartbeat.ts";
-import { executeJob } from "./worker/worker.ts";
+import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
+import { executeJob, reportJobCrash } from "./worker/worker.ts";
 
 type AddJobSimpleParams = Pick<IJobsSimple, "name" | "payload"> &
   Partial<Pick<IJobsSimple, "scheduled_for">> & { queued?: boolean };
@@ -23,7 +27,9 @@ export async function addJob({
   });
 
   if (!queued && job) {
-    return executeJob(job, null);
+    const finallyCb = await startSyncHeartbeat();
+
+    return executeJob(job, null).finally(finallyCb);
   }
 
   return 0;
@@ -32,6 +38,12 @@ export async function addJob({
 async function runJobProcessor(signal: AbortSignal): Promise<void> {
   if (signal.aborted) {
     return;
+  }
+
+  const exitedJob = await detectExitedJobs();
+  if (exitedJob) {
+    await reportJobCrash(exitedJob);
+    return startJobProcessor(signal);
   }
 
   getLogger().debug(`Process jobs queue - looking for a job to execute`);
@@ -48,8 +60,18 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
 }
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
-  await startHeartbeat(signal);
+  await startHeartbeat(true, signal);
+
+  if (signal.aborted) return;
+
   await cronsInit();
+
+  if (signal.aborted) return;
+
+  await startCronScheduler(signal);
+
+  if (signal.aborted) return;
+
   await runJobProcessor(signal);
 }
 
