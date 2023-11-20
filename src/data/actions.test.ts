@@ -5,6 +5,7 @@ import {
   detectExitedJobs,
   getCronTaskJob,
   getJobCollection,
+  getSimpleJob,
   getWorkerCollection,
   pickNextJob,
 } from "../data/actions.ts";
@@ -143,6 +144,25 @@ describe("pickNextJob", () => {
         worker_id: workerId,
         status: "running",
         started_at: now,
+      });
+    });
+
+    it("should return paused jobs but preserve old started_at", async () => {
+      const jobs = [
+        createSimpleJob({
+          status: "paused",
+          scheduled_for: agesAgo,
+          started_at: past,
+        }),
+      ] as const;
+      await getJobCollection().insertMany([...jobs]);
+
+      expect(await pickNextJob()).toEqual(jobs[0]);
+      expect(await getSimpleJob(jobs[0]._id)).toEqual({
+        ...jobs[0],
+        worker_id: workerId,
+        status: "running",
+        started_at: past,
       });
     });
   });

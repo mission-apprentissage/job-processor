@@ -249,12 +249,18 @@ export async function pickNextJob(): Promise<
   return getJobCollection().findOneAndUpdate(
     {
       type: { $in: ["simple", "cron_task"] },
-      status: "pending",
+      status: { $in: ["paused", "pending"] },
       scheduled_for: { $lte: new Date() },
     },
-    {
-      $set: { status: "running", worker_id: workerId, started_at: new Date() },
-    },
+    [
+      {
+        $set: {
+          status: "running",
+          worker_id: workerId,
+          started_at: { $ifNull: ["$started_at", new Date()] },
+        },
+      },
+    ],
     { sort: { scheduled_for: 1 }, includeResultMetadata: false },
   ) as Promise<IJobsCronTask | IJobsSimple | null>;
 }

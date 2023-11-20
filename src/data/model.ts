@@ -12,7 +12,7 @@ export const ZJobSimple = z
     name: z.string().describe("Le nom de la tâche"),
     type: z.literal("simple"),
     status: z
-      .enum(["pending", "running", "finished", "errored"])
+      .enum(["pending", "running", "finished", "errored", "paused"])
       .describe("Statut courant du job"),
     sync: z.boolean().describe("Si le job est synchrone"),
     payload: z
@@ -60,7 +60,7 @@ export const ZJobCronTask = z
     name: zCronName,
     type: z.literal("cron_task"),
     status: z
-      .enum(["pending", "running", "finished", "errored"])
+      .enum(["pending", "running", "finished", "errored", "paused"])
       .describe("Statut courant du job"),
     scheduled_for: z.date().describe("Date de lancement programmée"),
     started_at: z.date().nullish().describe("Date de lancement"),

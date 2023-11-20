@@ -56,6 +56,27 @@ async function onRunnerExit(
   return { status, duration };
 }
 
+function getJobAbortedCb(
+  job: IJobsSimple | IJobsCronTask,
+  startDate: Date,
+): () => Promise<void> {
+  return async () => {
+    // As soon as the process is abort, we update job status
+    // We still wait for completion of the handler
+    // but in case it didn't return in time, we still have a better status
+    const resumable =
+      job.type === "simple"
+        ? getJobSimpleDef(job)?.resumable
+        : getCronTaskDef(job)?.resumable;
+
+    if (resumable === true) {
+      await updateJob(job._id, { status: "paused", worker_id: null });
+    } else {
+      await onRunnerExit(startDate, job, "Interrupted", null);
+    }
+  };
+}
+
 async function runner(
   job: IJobsCronTask | IJobsSimple,
   signal: AbortSignal,
@@ -69,6 +90,10 @@ async function runner(
 
   jobLogger.info("job started");
   const startDate = job.started_at ?? new Date();
+
+  const onAbort = getJobAbortedCb(job, startDate);
+  signal.addEventListener("abort", onAbort);
+
   await updateJob(job._id, {
     status: "running",
     started_at: startDate,
@@ -93,6 +118,11 @@ async function runner(
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
+    if (err === signal.reason) {
+      // No need to update, it's already handled by onAbort
+      return 2;
+    }
+
     captureException(err);
     jobLogger.error(
       { err, writeErrors: err.writeErrors, error: err },
@@ -100,6 +130,8 @@ async function runner(
     );
     error = (err as Error)?.stack ?? "Unknown";
   }
+
+  signal.removeEventListener("abort", onAbort);
 
   const { status, duration } = await onRunnerExit(
     startDate,

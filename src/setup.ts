@@ -14,6 +14,7 @@ export type JobDef = {
   handler: (job: IJobsSimple, signal: AbortSignal) => Promise<unknown>;
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
+  resumable?: boolean;
 };
 
 export type CronDef = {
@@ -21,6 +22,7 @@ export type CronDef = {
   handler: (signal: AbortSignal) => Promise<unknown>;
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
+  resumable?: boolean;
 };
 
 export type JobProcessorOptions = {
