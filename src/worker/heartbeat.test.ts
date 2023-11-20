@@ -97,8 +97,11 @@ describe("startHeartbeat", () => {
     });
 
     // Execute next interval
+    const onPing = new Promise((resolve) =>
+      heartbeatEvent.once("ping", resolve),
+    );
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     workers = await getWorkerCollection().find({}).toArray();
@@ -146,12 +149,11 @@ describe("startHeartbeat", () => {
     await getWorkerCollection().deleteOne({ _id: workerId });
 
     // Execute next interval
+    const onPing = new Promise((resolve) =>
+      heartbeatEvent.once("ping", resolve),
+    );
     await vi.runOnlyPendingTimersAsync();
-    await expect(
-      new Promise((resolve) => {
-        heartbeatEvent.once("ping", resolve);
-      }),
-    ).resolves.toBeUndefined();
+    await expect(onPing).resolves.toBeUndefined();
     expect(vi.getTimerCount()).toBe(1);
 
     // Expect worker has been re-created
@@ -167,8 +169,11 @@ describe("startHeartbeat", () => {
       lastSeen: new Date(startDate.getTime() + 30_000),
     });
 
+    const onStop = new Promise((resolve) =>
+      heartbeatEvent.once("stop", resolve),
+    );
     abortController.abort();
-    await new Promise((resolve) => heartbeatEvent.once("stop", resolve));
+    await onStop;
     expect(vi.getTimerCount()).toBe(0);
 
     workers = await getWorkerCollection().find({}).toArray();
@@ -197,8 +202,9 @@ describe("startSyncHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(1);
 
     // Execute next interval
+    let onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     worker = await getWorkerCollection().findOne({ _id: workerId });
@@ -211,8 +217,9 @@ describe("startSyncHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(1);
 
     // Execute next interval
+    onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     worker = await getWorkerCollection().findOne({ _id: workerId });
@@ -222,8 +229,9 @@ describe("startSyncHeartbeat", () => {
     const finallyCb3 = await startSyncHeartbeat();
 
     // Execute next interval
+    onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     worker = await getWorkerCollection().findOne({ _id: workerId });
@@ -236,8 +244,9 @@ describe("startSyncHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(1);
 
     // Execute next interval
+    onPing = new Promise((resolve) => heartbeatEvent.once("ping", resolve));
     await vi.runOnlyPendingTimersAsync();
-    await new Promise((resolve) => heartbeatEvent.once("ping", resolve));
+    await onPing;
 
     // Expect lastSeen has been updated
     worker = await getWorkerCollection().findOne({ _id: workerId });
