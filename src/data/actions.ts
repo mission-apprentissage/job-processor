@@ -154,19 +154,6 @@ export const createJobCron = async ({
   return job;
 };
 
-export const updateJobCron = async (
-  id: ObjectId,
-  cron_string: IJobsCron["cron_string"],
-): Promise<void> => {
-  const data: Partial<IJobsCron> = {
-    status: "active",
-    cron_string,
-    updated_at: new Date(),
-  };
-
-  await getJobCollection().findOneAndUpdate({ _id: id }, data);
-};
-
 type CreateJobCronTaskParams = Pick<IJobsCron, "name" | "scheduled_for">;
 
 export const createJobCronTask = async ({

@@ -1,6 +1,6 @@
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
-import { CronDef, JobDef, getLogger, getOptions } from "../setup.ts";
+import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,
   runWithAsyncContext,
@@ -24,6 +24,7 @@ async function onRunnerExit(
   job: IJobsCronTask | IJobsSimple,
   error: string | null,
   result: unknown,
+  jobLogger: ILogger,
 ) {
   const endDate = new Date();
   const ts = endDate.getTime() - startDate.getTime();
@@ -43,13 +44,19 @@ async function onRunnerExit(
     const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
     if (onJobExited) {
       const updatedJob = (await getSimpleJob(job._id)) ?? job;
-      await onJobExited(updatedJob);
+      await onJobExited(updatedJob).catch((error) => {
+        captureException(error);
+        jobLogger.error({ error, job }, "job-processor: onJobExited failed");
+      });
     }
   } else {
     const onJobExited = getCronTaskDef(job)?.onJobExited ?? null;
     if (onJobExited) {
       const updatedJob = (await getCronTaskJob(job._id)) ?? job;
-      await onJobExited(updatedJob);
+      await onJobExited(updatedJob).catch((error) => {
+        captureException(error);
+        jobLogger.error({ error, job }, "job-processor: onJobExited failed");
+      });
     }
   }
 
@@ -59,6 +66,7 @@ async function onRunnerExit(
 function getJobAbortedCb(
   job: IJobsSimple | IJobsCronTask,
   startDate: Date,
+  jobLogger: ILogger,
 ): () => Promise<void> {
   return async () => {
     try {
@@ -73,7 +81,7 @@ function getJobAbortedCb(
       if (resumable === true) {
         await updateJob(job._id, { status: "paused", worker_id: null });
       } else {
-        await onRunnerExit(startDate, job, "Interrupted", null);
+        await onRunnerExit(startDate, job, "Interrupted", null, jobLogger);
       }
     } catch (err) {
       captureException(err);
@@ -95,7 +103,7 @@ async function runner(
   jobLogger.info("job started");
   const startDate = job.started_at ?? new Date();
 
-  const onAbort = getJobAbortedCb(job, startDate);
+  const onAbort = getJobAbortedCb(job, startDate, jobLogger);
   signal.addEventListener("abort", onAbort);
 
   await updateJob(job._id, {
@@ -142,6 +150,7 @@ async function runner(
     job,
     error,
     result,
+    jobLogger,
   );
 
   jobLogger.info({ status, duration }, "job ended");

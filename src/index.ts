@@ -62,20 +62,22 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   const teardownHeartbeat = await startHeartbeat(true, signal);
 
-  if (signal.aborted) return;
+  try {
+    if (signal.aborted) return;
 
-  await cronsInit();
+    await cronsInit();
 
-  if (signal.aborted) return;
+    if (signal.aborted) return;
 
-  await startCronScheduler(signal);
+    await startCronScheduler(signal);
 
-  if (signal.aborted) return;
+    if (signal.aborted) return;
 
-  await runJobProcessor(signal);
-
-  // heartbeat need to be awaited to let last mongodb updates to run
-  await teardownHeartbeat();
+    await runJobProcessor(signal);
+  } finally {
+    // heartbeat need to be awaited to let last mongodb updates to run
+    await teardownHeartbeat();
+  }
 }
 
 export { initJobProcessor } from "./setup.ts";
