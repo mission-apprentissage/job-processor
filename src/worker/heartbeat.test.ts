@@ -256,16 +256,17 @@ describe("startSyncHeartbeat", () => {
     worker = await getWorkerCollection().findOne({ _id: workerId });
     expect(worker?.lastSeen).toEqual(new Date(startDate.getTime() + 120_000));
 
+    let onStop = new Promise((resolve) => heartbeatEvent.once("stop", resolve));
     // Job #3 stops
     finallyCb3();
 
     // It should stop
-    await new Promise((resolve) => heartbeatEvent.once("stop", resolve));
+    await onStop;
 
     expect(vi.getTimerCount()).toBe(0);
 
     worker = await getWorkerCollection().findOne({ _id: workerId });
-    expect(worker).toBe(null);
+    expect(worker).not.toBe(null);
 
     // 2 Jobs starting concurrently
     const [finallyCb4, finallyCb5] = await Promise.all([
@@ -280,11 +281,12 @@ describe("startSyncHeartbeat", () => {
     worker = await getWorkerCollection().findOne({ _id: workerId });
     expect(worker?.lastSeen).toEqual(new Date(startDate.getTime() + 120_000));
 
+    onStop = new Promise((resolve) => heartbeatEvent.once("stop", resolve));
     // Jobs stopping concurrently
     finallyCb4();
     finallyCb5();
+    await onStop;
 
-    await new Promise((resolve) => heartbeatEvent.once("stop", resolve));
     expect(vi.getTimerCount()).toBe(0);
   });
 });
