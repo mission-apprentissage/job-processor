@@ -53,7 +53,7 @@ export async function startSyncHeartbeat(): Promise<() => void> {
 }
 
 export async function startHeartbeat(
-  exitOnError: boolean,
+  isWorker: boolean,
   signal: AbortSignal,
 ): Promise<() => Promise<null>> {
   await createWorker();
@@ -85,7 +85,7 @@ export async function startHeartbeat(
         getOptions().logger.error({ error }, "job-processor: heartbeat failed");
         captureException(error);
 
-        if (!exitOnError) {
+        if (!isWorker) {
           // Force recreation in case it was removed
           // And keep trying
           return createWorker()
@@ -114,9 +114,12 @@ export async function startHeartbeat(
     signal.addEventListener("abort", async () => {
       clearInterval(intervalId);
 
-      await getWorkerCollection()
-        .deleteOne({ _id: workerId })
-        .catch(captureException);
+      if (isWorker) {
+        await getWorkerCollection()
+          .deleteOne({ _id: workerId })
+          .catch(captureException);
+      }
+
       heartbeatEvent.emit("stop");
       resolve(null);
     });

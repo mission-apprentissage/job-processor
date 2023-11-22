@@ -44,19 +44,23 @@ async function onRunnerExit(
     const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
     if (onJobExited) {
       const updatedJob = (await getSimpleJob(job._id)) ?? job;
-      await onJobExited(updatedJob).catch((error) => {
+      try {
+        await onJobExited(updatedJob);
+      } catch (errored) {
         captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
-      });
+      }
     }
   } else {
     const onJobExited = getCronTaskDef(job)?.onJobExited ?? null;
     if (onJobExited) {
       const updatedJob = (await getCronTaskJob(job._id)) ?? job;
-      await onJobExited(updatedJob).catch((error) => {
+      try {
+        await onJobExited(updatedJob);
+      } catch (errored) {
         captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
-      });
+      }
     }
   }
 

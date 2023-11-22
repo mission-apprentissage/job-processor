@@ -123,7 +123,7 @@ describe("startHeartbeat", () => {
     expect(workers[1]).toEqual(otherWorkers[1]);
   });
 
-  it("when exitOnError=true should exit on heartbeat error", async () => {
+  it("when isWorker=true should exit on heartbeat error", async () => {
     const abortController = new AbortController();
     await startHeartbeat(true, abortController.signal);
     expect(workerId).toEqual(expect.any(ObjectId));
@@ -139,7 +139,7 @@ describe("startHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("when exitOnError=false should keep trying on heartbeat error", async () => {
+  it("when isWorker=false should keep trying on heartbeat error", async () => {
     const abortController = new AbortController();
     await startHeartbeat(false, abortController.signal);
     expect(workerId).toEqual(expect.any(ObjectId));
@@ -175,9 +175,15 @@ describe("startHeartbeat", () => {
     expect(vi.getTimerCount()).toBe(0);
 
     workers = await getWorkerCollection().find({}).toArray();
-    expect(workers).toHaveLength(2);
+    // When not ran in worker mode, we should not delete worker
+    expect(workers).toHaveLength(3);
     expect(workers[0]).toEqual(otherWorkers[0]);
     expect(workers[1]).toEqual(otherWorkers[1]);
+    expect(workers[2]).toEqual({
+      _id: workerId,
+      hostname: expect.any(String),
+      lastSeen: new Date(startDate.getTime() + 30_000),
+    });
   });
 });
 
