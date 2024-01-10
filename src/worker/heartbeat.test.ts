@@ -123,19 +123,102 @@ describe("startHeartbeat", () => {
     expect(workers[1]).toEqual(otherWorkers[1]);
   });
 
-  it("when isWorker=true should exit on heartbeat error", async () => {
+  it("when isWorker=true should exit on heartbeat error after 3 consecutive failure", async () => {
     const abortController = new AbortController();
     await startHeartbeat(true, abortController.signal);
     expect(workerId).toEqual(expect.any(ObjectId));
 
     await getWorkerCollection().deleteOne({ _id: workerId });
 
-    // Execute next interval
+    // First interval
+    const onFail1 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail1).resolves.toBeUndefined();
+
+    // Second interval
+    const onFail2 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail2).resolves.toBeUndefined();
+
+    // Last interval
     const onKill = new Promise((resolve) => {
       heartbeatEvent.once("kill", resolve);
     });
     await vi.runOnlyPendingTimersAsync();
     await expect(onKill).resolves.toBeUndefined();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("should reset error count after every success", async () => {
+    const abortController = new AbortController();
+    await startHeartbeat(true, abortController.signal);
+    expect(workerId).toEqual(expect.any(ObjectId));
+
+    await getWorkerCollection().deleteOne({ _id: workerId });
+
+    // First interval
+    const onFail1 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail1).resolves.toBeUndefined();
+
+    // Second interval
+    const onFail2 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail2).resolves.toBeUndefined();
+
+    // Error should be resolved
+    await getWorkerCollection().insertOne({
+      _id: workerId,
+      lastSeen: new Date(),
+      hostname: "worker_1",
+    });
+
+    // Last interval
+    const onPing1 = new Promise((resolve) => {
+      heartbeatEvent.once("ping", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onPing1).resolves.toBeUndefined();
+
+    // Last interval
+    const onPing2 = new Promise((resolve) => {
+      heartbeatEvent.once("ping", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onPing2).resolves.toBeUndefined();
+
+    await getWorkerCollection().deleteOne({ _id: workerId });
+
+    // First interval
+    const onFail3 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail3).resolves.toBeUndefined();
+
+    // Second interval
+    const onFail4 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail4).resolves.toBeUndefined();
+
+    // Last interval
+    const onKill = new Promise((resolve) => {
+      heartbeatEvent.once("kill", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onKill).resolves.toBeUndefined();
+
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -146,7 +229,21 @@ describe("startHeartbeat", () => {
 
     await getWorkerCollection().deleteOne({ _id: workerId });
 
-    // Execute next interval
+    // First interval
+    const onFail1 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail1).resolves.toBeUndefined();
+
+    // Second interval
+    const onFail2 = new Promise((resolve) => {
+      heartbeatEvent.once("fail", resolve);
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await expect(onFail2).resolves.toBeUndefined();
+
+    // Last interval recreate
     const onPing = new Promise((resolve) =>
       heartbeatEvent.once("ping", resolve),
     );
@@ -164,7 +261,7 @@ describe("startHeartbeat", () => {
     expect(workers[2]).toEqual({
       _id: workerId,
       hostname: expect.any(String),
-      lastSeen: new Date(startDate.getTime() + 30_000),
+      lastSeen: new Date(startDate.getTime() + 90_000),
     });
 
     const onStop = new Promise((resolve) =>
@@ -182,7 +279,7 @@ describe("startHeartbeat", () => {
     expect(workers[2]).toEqual({
       _id: workerId,
       hostname: expect.any(String),
-      lastSeen: new Date(startDate.getTime() + 30_000),
+      lastSeen: new Date(startDate.getTime() + 90_000),
     });
   });
 });

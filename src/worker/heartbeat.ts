@@ -58,6 +58,8 @@ export async function startHeartbeat(
 ): Promise<() => Promise<null>> {
   await createWorker();
 
+  let successiveErrorsCount = 0;
+
   const intervalId = setInterval(
     async () => {
       try {
@@ -76,14 +78,23 @@ export async function startHeartbeat(
         }
 
         heartbeatEvent.emit("ping");
+        successiveErrorsCount = 0;
       } catch (error) {
         // Error when processor is aborted are expected
         if (signal.aborted) {
           return;
         }
 
+        successiveErrorsCount++;
+
         getOptions().logger.error({ error }, "job-processor: heartbeat failed");
         captureException(error);
+
+        if (successiveErrorsCount < 3) {
+          heartbeatEvent.emit("fail");
+          getOptions().logger.info("job-processor: waiting for next check");
+          return;
+        }
 
         if (!isWorker) {
           // Force recreation in case it was removed
