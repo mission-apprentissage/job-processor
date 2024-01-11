@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { getWorkerCollection } from "../data/actions.ts";
 import os from "node:os";
 import { getOptions } from "../setup.ts";
-import { captureException } from "@sentry/node";
+import { captureException, flush } from "@sentry/node";
 import { EventEmitter } from "node:events";
 
 export const workerId = new ObjectId();
@@ -113,8 +113,11 @@ export async function startHeartbeat(
 
         // Any failure in heartbeat is critical, just kill the process to prevent race conditions
         // Do not exit on tests
-        // eslint-disable-next-line n/no-process-exit
-        if (process.env["NODE_ENV"] !== "test") process.exit(1);
+        if (process.env["NODE_ENV"] !== "test") {
+          await flush();
+          // eslint-disable-next-line n/no-process-exit
+          process.exit(1);
+        }
       }
     },
     // 30 seconds: needs to be way lower than expireAfterSeconds index
