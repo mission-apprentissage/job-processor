@@ -70,7 +70,7 @@ export async function startHeartbeat(
 
         // We were detected as died by others, just exit abrutly
         // This can be caused by process not releasing the event loop for more than 5min
-        if (result.modifiedCount === 0) {
+        if (result.matchedCount === 0) {
           const error = new Error(
             "job-processor: worker has been detected as died",
           );
@@ -125,18 +125,22 @@ export async function startHeartbeat(
   ).unref();
 
   const teardownPromise: Promise<null> = new Promise((resolve) => {
-    signal.addEventListener("abort", async () => {
-      clearInterval(intervalId);
+    signal.addEventListener(
+      "abort",
+      async () => {
+        clearInterval(intervalId);
 
-      if (isWorker) {
-        await getWorkerCollection()
-          .deleteOne({ _id: workerId })
-          .catch(captureException);
-      }
+        if (isWorker) {
+          await getWorkerCollection()
+            .deleteOne({ _id: workerId })
+            .catch(captureException);
+        }
 
-      heartbeatEvent.emit("stop");
-      resolve(null);
-    });
+        heartbeatEvent.emit("stop");
+        resolve(null);
+      },
+      { once: true },
+    );
   });
 
   return () => teardownPromise;

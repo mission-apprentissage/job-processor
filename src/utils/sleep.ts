@@ -15,6 +15,6 @@ export async function sleep(
       resolve();
     }, durationMs);
 
-    signal?.addEventListener("abort", listener);
+    signal?.addEventListener("abort", listener, { once: true });
   });
 }

@@ -108,7 +108,7 @@ async function runner(
   const startDate = job.started_at ?? new Date();
 
   const onAbort = getJobAbortedCb(job, startDate, jobLogger);
-  signal.addEventListener("abort", onAbort);
+  signal.addEventListener("abort", onAbort, { once: true });
 
   await updateJob(job._id, {
     status: "running",
