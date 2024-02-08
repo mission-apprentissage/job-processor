@@ -41,7 +41,7 @@ function getCrons(): Cron[] {
 }
 
 export async function cronsInit() {
-  getLogger().info(`Crons - initialise crons in DB`);
+  getLogger().debug(`Crons - initialise crons in DB`);
 
   const CRONS = getCrons();
 
@@ -174,7 +174,11 @@ export async function startCronScheduler(signal: AbortSignal) {
     }
   }, 60_000).unref();
 
-  signal.addEventListener("abort", () => {
-    clearInterval(intervalID);
-  });
+  signal.addEventListener(
+    "abort",
+    () => {
+      clearInterval(intervalID);
+    },
+    { once: true },
+  );
 }

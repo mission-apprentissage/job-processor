@@ -43,7 +43,7 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
   const exitedJob = await detectExitedJobs();
   if (exitedJob) {
     await reportJobCrash(exitedJob);
-    return startJobProcessor(signal);
+    return runJobProcessor(signal);
   }
 
   getLogger().debug(`Process jobs queue - looking for a job to execute`);
@@ -56,7 +56,7 @@ async function runJobProcessor(signal: AbortSignal): Promise<void> {
     await sleep(45_000, signal); // 45 secondes
   }
 
-  return startJobProcessor(signal);
+  return runJobProcessor(signal);
 }
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
