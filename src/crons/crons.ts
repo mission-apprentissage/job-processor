@@ -62,17 +62,18 @@ export async function cronsInit() {
     const result = await getJobCollection().findOneAndUpdate(
       {
         name: cron.name,
+        type: "cron",
       },
       {
         $set: {
           cron_string: cron.cron_string,
+          updated_at: now,
         },
         $setOnInsert: {
           _id: new ObjectId(),
           name: cron.name,
           type: "cron",
           status: "active",
-          updated_at: now,
           created_at: now,
           scheduled_for: now,
         },
@@ -88,10 +89,11 @@ export async function cronsInit() {
 
     if (oldJob === null) {
       // upsert is not atomic, make sure we didn't created a duplicate
-      const createdCrons = await getJobCollection()
+      const existingCrons = await getJobCollection()
         .find(
           {
             name: cron.name,
+            type: "cron",
           },
           {
             sort: { _id: 1 },
@@ -99,11 +101,12 @@ export async function cronsInit() {
         )
         .toArray();
 
-      if (createdCrons.length > 1 && createdCrons[0]) {
+      if (existingCrons.length > 1 && existingCrons[0]) {
         // Just keep the first one
         await getJobCollection().deleteMany({
           name: cron.name,
-          _id: { $ne: createdCrons[0]._id },
+          type: "cron",
+          _id: { $ne: existingCrons[0]._id },
         });
       }
     }
@@ -144,7 +147,7 @@ export async function runCronsScheduler(): Promise<void> {
     // Ensure no concurrent worker scheduled this cron already
     const result = await getJobCollection().updateOne(
       { _id: cron._id, scheduled_for: cron.scheduled_for },
-      { $set: { scheduled_for: next } },
+      { $set: { scheduled_for: next, updated_at: new Date() } },
     );
 
     // Otherwise is already scheduled by another worker
