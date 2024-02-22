@@ -114,14 +114,16 @@ export const createJobSimple = async ({
   scheduled_for = new Date(),
   sync = false,
 }: CreateJobSimpleParams): Promise<IJobsSimple> => {
+  const now = new Date();
+
   const job: IJobsSimple = {
     _id: new ObjectId(),
     name,
     type: "simple",
     status: sync ? "running" : "pending",
     payload,
-    updated_at: new Date(),
-    created_at: new Date(),
+    updated_at: now,
+    created_at: now,
     scheduled_for,
     sync,
     worker_id: null,
@@ -140,14 +142,16 @@ export const createJobCron = async ({
   cron_string,
   scheduled_for = new Date(),
 }: CreateJobCronParams): Promise<IJobsCron> => {
+  const now = new Date();
+
   const job: IJobsCron = {
     _id: new ObjectId(),
     name,
     type: "cron",
     status: "active",
     cron_string,
-    updated_at: new Date(),
-    created_at: new Date(),
+    updated_at: now,
+    created_at: now,
     scheduled_for,
   };
   await getJobCollection().insertOne(job);
@@ -160,13 +164,15 @@ export const createJobCronTask = async ({
   name,
   scheduled_for,
 }: CreateJobCronTaskParams): Promise<IJobsCronTask> => {
+  const now = new Date();
+
   const job: IJobsCronTask = {
     _id: new ObjectId(),
     name,
     type: "cron_task",
     status: "pending",
-    updated_at: new Date(),
-    created_at: new Date(),
+    updated_at: now,
+    created_at: now,
     started_at: null,
     ended_at: null,
     scheduled_for,

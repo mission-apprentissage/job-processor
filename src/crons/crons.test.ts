@@ -3,7 +3,12 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
 import { getJobCollection } from "../data/actions.ts";
 import { IJobsCron, IJobsCronTask } from "../index.ts";
-import { cronSchedulerEvent, cronsInit, startCronScheduler } from "./crons.ts";
+import {
+  cronSchedulerEvent,
+  cronsInit,
+  runCronsScheduler,
+  startCronScheduler,
+} from "./crons.ts";
 
 let client: MongoClient;
 
@@ -143,7 +148,7 @@ describe("cronsInit", () => {
     ).toEqual(expectedTasks);
   });
 
-  it("should support concurrency", async () => {
+  it.skip("should support concurrency", async () => {
     await Promise.all([
       cronsInit(),
       cronsInit(),
@@ -160,6 +165,143 @@ describe("cronsInit", () => {
     expect(
       await getJobCollection().find({ type: "cron_task" }).toArray(),
     ).toEqual(expectedTasks);
+  });
+
+  it("should support concurrency", async () => {
+    // Simulate concurrency where one of the cron alreay scheduled a task
+    const newTask = createCronTaskJob({ name: "newOne", status: "pending" });
+    await getJobCollection().insertOne(newTask);
+
+    await Promise.all([
+      cronsInit(),
+      cronsInit(),
+      cronsInit(),
+      cronsInit(),
+      cronsInit(),
+      cronsInit(),
+      cronsInit(),
+    ]);
+
+    expect(await getJobCollection().find({ type: "cron" }).toArray()).toEqual(
+      expectedCrons,
+    );
+    expect(
+      await getJobCollection().find({ type: "cron_task" }).toArray(),
+    ).toEqual([...expectedTasks, newTask]);
+  });
+});
+
+describe("runCronsScheduler", () => {
+  beforeEach(async () => {
+    const options = {
+      logger: {
+        debug: vi.fn() as any,
+        info: vi.fn() as any,
+        error: vi.fn() as any,
+        child: vi.fn() as any,
+      },
+      db: client.db(),
+      jobs: {},
+      crons: {
+        "Daily at 9am Paris time": {
+          cron_string: "0 9 * * *",
+          handler: vi.fn(),
+        },
+      },
+    };
+
+    await initJobProcessor(options);
+  });
+
+  it("should run schedule crons properly", async () => {
+    const createdAt = new Date("2024-02-21T10:30:00.000Z");
+    const updatedAt = new Date("2024-02-21T10:40:00.000Z");
+    const nextScheduledFor1 = new Date("2024-02-22T08:00:00.000Z");
+    const nextCronScheduler = new Date("2024-02-22T08:00:10.000Z");
+    const nextScheduledFor2 = new Date("2024-02-23T08:00:00.000Z");
+
+    vi.setSystemTime(createdAt);
+
+    await getJobCollection().insertOne({
+      _id: new ObjectId(),
+      type: "cron",
+      cron_string: "0 9 * * *",
+      status: "active",
+      updated_at: createdAt,
+      created_at: createdAt,
+      scheduled_for: createdAt,
+      name: "Daily at 9am Paris time",
+    });
+
+    vi.setSystemTime(updatedAt);
+
+    await runCronsScheduler();
+
+    expect(await getJobCollection().find().toArray()).toEqual([
+      {
+        _id: expect.any(ObjectId),
+        created_at: createdAt,
+        cron_string: "0 9 * * *",
+        name: "Daily at 9am Paris time",
+        scheduled_for: nextScheduledFor1,
+        status: "active",
+        type: "cron",
+        updated_at: updatedAt,
+      },
+      {
+        _id: expect.any(ObjectId),
+        created_at: updatedAt,
+        ended_at: null,
+        name: "Daily at 9am Paris time",
+        scheduled_for: nextScheduledFor1,
+        started_at: null,
+        status: "pending",
+        type: "cron_task",
+        updated_at: updatedAt,
+        worker_id: null,
+      },
+    ]);
+
+    vi.setSystemTime(nextCronScheduler);
+
+    await runCronsScheduler();
+
+    expect(await getJobCollection().find().toArray()).toEqual([
+      {
+        _id: expect.any(ObjectId),
+        created_at: createdAt,
+        cron_string: "0 9 * * *",
+        name: "Daily at 9am Paris time",
+        scheduled_for: nextScheduledFor2,
+        status: "active",
+        type: "cron",
+        updated_at: nextCronScheduler,
+      },
+      {
+        _id: expect.any(ObjectId),
+        created_at: updatedAt,
+        ended_at: null,
+        name: "Daily at 9am Paris time",
+        scheduled_for: nextScheduledFor1,
+        started_at: null,
+        status: "pending",
+        type: "cron_task",
+        updated_at: updatedAt,
+        worker_id: null,
+      },
+      {
+        _id: expect.any(ObjectId),
+        created_at: nextCronScheduler,
+        ended_at: null,
+        name: "Daily at 9am Paris time",
+        scheduled_for: nextScheduledFor2,
+        started_at: null,
+        status: "pending",
+        type: "cron_task",
+        updated_at: nextCronScheduler,
+        worker_id: null,
+      },
+    ]);
   });
 });
 
@@ -247,7 +389,7 @@ describe("startCronScheduler", () => {
 
     const expectedCronsIn2Min = [
       { ...initialCrons[1], scheduled_for: in3Min },
-      { ...initialCrons[0], scheduled_for: in4Min },
+      { ...initialCrons[0], scheduled_for: in4Min, updated_at: in2Min },
     ];
 
     const expectedTasksIn2Min = [
@@ -260,8 +402,8 @@ describe("startCronScheduler", () => {
     ];
 
     const expectedCronsIn3Min = [
-      { ...initialCrons[0], scheduled_for: in4Min },
-      { ...initialCrons[1], scheduled_for: in6Min },
+      { ...initialCrons[0], scheduled_for: in4Min, updated_at: in2Min },
+      { ...initialCrons[1], scheduled_for: in6Min, updated_at: in3Min },
     ];
 
     const expectedTasksIn3Min = [
