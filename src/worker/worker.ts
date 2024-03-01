@@ -85,6 +85,9 @@ function getJobAbortedCb(
       if (resumable === true) {
         await updateJob(job._id, { status: "paused", worker_id: null });
       } else {
+        captureException(new Error("[job-processor] Job aborted"), {
+          extra: { job },
+        });
         await onRunnerExit(startDate, job, "Interrupted", null, jobLogger);
       }
     } catch (err) {
