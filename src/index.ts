@@ -1,3 +1,4 @@
+import { captureException } from "@sentry/node";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import {
   createJobSimple,
@@ -74,6 +75,12 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
     if (signal.aborted) return;
 
     await runJobProcessor(signal);
+  } catch (error) {
+    if (signal.reason !== error) {
+      getLogger().error({ error }, "Job processor crashed");
+      captureException(error);
+      throw error;
+    }
   } finally {
     // heartbeat need to be awaited to let last mongodb updates to run
     await teardownHeartbeat();
