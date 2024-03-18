@@ -16,5 +16,8 @@ export async function sleep(
     }, durationMs);
 
     signal?.addEventListener("abort", listener, { once: true });
+    if (signal?.aborted) {
+      listener();
+    }
   });
 }

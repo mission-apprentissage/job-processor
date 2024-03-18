@@ -1,15 +1,11 @@
 import { captureException } from "@sentry/node";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
-import {
-  createJobSimple,
-  detectExitedJobs,
-  pickNextJob,
-} from "./data/actions.ts";
+import { createJobSimple } from "./data/actions.ts";
 import { IJobsSimple } from "./data/model.ts";
 import { getLogger } from "./setup.ts";
-import { sleep } from "./utils/sleep.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
-import { executeJob, reportJobCrash } from "./worker/worker.ts";
+import { executeJob } from "./worker/worker.ts";
+import { runJobProcessor } from "./worker/processor.ts";
 
 type AddJobSimpleParams = Pick<IJobsSimple, "name" | "payload"> &
   Partial<Pick<IJobsSimple, "scheduled_for">> & { queued?: boolean };
@@ -36,30 +32,6 @@ export async function addJob({
   return 0;
 }
 
-async function runJobProcessor(signal: AbortSignal): Promise<void> {
-  if (signal.aborted) {
-    return;
-  }
-
-  const exitedJob = await detectExitedJobs();
-  if (exitedJob) {
-    await reportJobCrash(exitedJob);
-    return runJobProcessor(signal);
-  }
-
-  getLogger().debug(`Process jobs queue - looking for a job to execute`);
-  const nextJob = await pickNextJob();
-
-  if (nextJob) {
-    getLogger().info({ job: nextJob.name }, "job will start");
-    await executeJob(nextJob, signal);
-  } else {
-    await sleep(45_000, signal); // 45 secondes
-  }
-
-  return runJobProcessor(signal);
-}
-
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   const teardownHeartbeat = await startHeartbeat(true, signal);
 
@@ -84,6 +56,7 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   } finally {
     // heartbeat need to be awaited to let last mongodb updates to run
     await teardownHeartbeat();
+    getLogger().info("Job processor stopped");
   }
 }
 

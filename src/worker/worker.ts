@@ -19,6 +19,19 @@ function getCronTaskDef(job: IJobsCronTask): CronDef | null {
   return options.crons[job.name] ?? null;
 }
 
+function stringifyError<T>(error: T): string | T {
+  if (error instanceof Error) {
+    const message =
+      error.stack?.split("\n").slice(0, 3).join("\n") ?? error.message;
+
+    if (!error.cause) return message;
+
+    return `${message}\nCaused by: ${stringifyError(error.cause)}`;
+  }
+
+  return error;
+}
+
 async function onRunnerExit(
   startDate: Date,
   job: IJobsCronTask | IJobsSimple,
@@ -147,7 +160,7 @@ async function runner(
       { err, writeErrors: err.writeErrors, error: err },
       "job error",
     );
-    error = (err as Error)?.stack ?? "Unknown";
+    error = stringifyError(err) ?? "job-erorr: unknown Error";
   }
 
   signal.removeEventListener("abort", onAbort);
