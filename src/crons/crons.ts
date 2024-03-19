@@ -128,7 +128,7 @@ export async function cronsInit() {
 export const cronSchedulerEvent = new EventEmitter();
 
 export async function runCronsScheduler(): Promise<void> {
-  getLogger().info(`Crons - Check and run crons`);
+  getLogger().debug(`Crons - Check and run crons`);
 
   const now = new Date();
   const crons = await findJobs<IJobsCron>(
