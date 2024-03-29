@@ -196,7 +196,7 @@ describe("detectExitedJobs", () => {
       createSimpleJob({
         status: "running",
         scheduled_for: past,
-        started_at: past,
+        started_at: agesAgo,
         worker_id: activeWorkers[0]._id,
       }),
       createCronTaskJob({

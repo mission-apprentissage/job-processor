@@ -7,7 +7,7 @@ export interface ILogger {
   info(data: Record<string, unknown>, msg: string): unknown;
   info(msg: string): unknown;
   child(data: Record<string, unknown>): ILogger;
-  error(data: Record<string, unknown>, msg: string | Error): unknown;
+  error(data: Record<string, unknown>, msg: string): unknown;
 }
 
 export type JobDef = {
