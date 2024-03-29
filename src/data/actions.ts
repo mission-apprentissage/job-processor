@@ -272,7 +272,7 @@ export async function detectExitedJobs(): Promise<
     {
       type: { $in: ["simple", "cron_task"] },
       status: "running",
-      worker_id: { $nin: activeWorkerIds },
+      worker_id: { $nin: activeWorkerIds.map(({ _id }) => _id) },
       started_at: { $lt: new Date(now.getTime() - 300_000) },
     },
     {
