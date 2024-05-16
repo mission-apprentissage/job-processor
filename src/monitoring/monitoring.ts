@@ -82,7 +82,9 @@ function buildCronStatus(jobs: IJob[]): CronStatus[] {
 }
 
 function buildJobStatus(jobs: IJob[]): JobStatus[] {
-  const names = Array.from(new Set(jobs.map((job) => job.name)));
+  const names = Array.from(
+    new Set(jobs.filter(isJobSimple).map((job) => job.name)),
+  );
 
   return names.map((name) => {
     return {
