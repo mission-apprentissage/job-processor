@@ -96,6 +96,24 @@ export const ZWorker = z
   })
   .strict();
 
+export function isJobSimple(job: IJob): job is IJobsSimple {
+  return job.type === "simple";
+}
+
+export function isJobCron(job: IJob): job is IJobsCron {
+  return job.type === "cron";
+}
+
+export function isJobCronTask(job: IJob): job is IJobsCronTask {
+  return job.type === "cron_task";
+}
+
+export function isJobSimpleOrCronTask(
+  job: IJob,
+): job is IJobsSimple | IJobsCronTask {
+  return isJobSimple(job) || isJobCronTask(job);
+}
+
 export type CronName = z.output<typeof zCronName>;
 
 export type IJob = z.output<typeof ZJob>;
