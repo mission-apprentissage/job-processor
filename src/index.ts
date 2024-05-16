@@ -89,5 +89,6 @@ export * from "./data/model.ts";
 export type * from "./data/model.ts";
 
 export { getProcessorStatus } from "./monitoring/monitoring.ts";
+export type * from "./monitoring/monitoring.ts";
 
 export { getSimpleJob } from "./data/actions.ts";

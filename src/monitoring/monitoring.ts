@@ -11,24 +11,24 @@ import {
   isJobSimpleOrCronTask,
 } from "../data/model.ts";
 
-type WorkerStatus = {
+export type WorkerStatus = {
   worker: IWorker;
   job: IJobsSimple | IJobsCronTask | null;
 };
 
-type CronStatus = {
+export type CronStatus = {
   cron: IJobsCron;
   scheduled: IJobsCronTask[];
   running: IJobsCronTask[];
   history: IJobsCronTask[];
 };
 
-type JobStatus = {
+export type JobStatus = {
   name: IJobsSimple["name"];
   jobs: IJobsSimple[];
 };
 
-type ProcessorStatus = {
+export type ProcessorStatus = {
   workers: WorkerStatus[];
   queue: Array<IJobsSimple | IJobsCronTask>;
   jobs: JobStatus[];
