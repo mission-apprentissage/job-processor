@@ -16,11 +16,6 @@ type WorkerStatus = {
   job: IJobsSimple | IJobsCronTask | null;
 };
 
-type QueueStatus = {
-  jobs: IJobsSimple[];
-  cron_tasks: IJobsCronTask[];
-};
-
 type CronStatus = {
   cron: IJobsCron;
   scheduled: IJobsCronTask[];
@@ -30,14 +25,12 @@ type CronStatus = {
 
 type JobStatus = {
   name: IJobsSimple["name"];
-  scheduled: IJobsSimple[];
-  running: IJobsSimple[];
-  history: IJobsSimple[];
+  jobs: IJobsSimple[];
 };
 
 type ProcessorStatus = {
   workers: WorkerStatus[];
-  queue: QueueStatus;
+  queue: Array<IJobsSimple | IJobsCronTask>;
   jobs: JobStatus[];
   crons: CronStatus[];
 };
@@ -53,15 +46,15 @@ function buildWorkerStatus(workers: IWorker[], jobs: IJob[]): WorkerStatus[] {
   });
 }
 
-function buildQueueStatus(jobs: IJob[], now: Date): QueueStatus {
-  const pending = jobs.filter(
-    (job) => job.status === "pending" && job.scheduled_for <= now,
-  );
+function buildQueueStatus(
+  jobs: IJob[],
+  now: Date,
+): Array<IJobsSimple | IJobsCronTask> {
+  const pending = jobs
+    .filter(isJobSimpleOrCronTask)
+    .filter((job) => job.status === "pending" && job.scheduled_for <= now);
 
-  return {
-    jobs: pending.filter(isJobSimple),
-    cron_tasks: pending.filter(isJobCronTask),
-  };
+  return pending;
 }
 
 function buildCronStatus(jobs: IJob[]): CronStatus[] {
@@ -92,23 +85,9 @@ function buildJobStatus(jobs: IJob[]): JobStatus[] {
   const names = Array.from(new Set(jobs.map((job) => job.name)));
 
   return names.map((name) => {
-    const instances = jobs
-      .filter(isJobSimple)
-      .filter((job) => job.name === name);
-
-    const scheduled = instances.filter((job) => job.status === "pending");
-    const running = instances.filter(
-      (job) => job.status === "running" || job.status === "paused",
-    );
-    const history = instances.filter(
-      (job) => job.status !== "pending" && job.status !== "running",
-    );
-
     return {
       name,
-      scheduled,
-      running,
-      history,
+      jobs: jobs.filter(isJobSimple).filter((job) => job.name === name),
     };
   });
 }
@@ -117,7 +96,9 @@ export async function getProcessorStatus(): Promise<ProcessorStatus> {
   const now = new Date();
   const [workers, jobs] = await Promise.all([
     getWorkerCollection().find().toArray(),
-    getJobCollection().find().toArray(),
+    getJobCollection()
+      .find({}, { sort: { scheduled_for: -1 } })
+      .toArray(),
   ]);
 
   return {
