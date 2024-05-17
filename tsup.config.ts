@@ -38,5 +38,23 @@ export default defineConfig((options) => {
         ...options.env,
       },
     },
+    {
+      entry: {
+        core: "src/common/index.ts",
+      },
+      watch: options.watch,
+      target: "es2022",
+      platform: "neutral",
+      format: ["esm"],
+      splitting: true,
+      shims: false,
+      minify: false,
+      sourcemap: true,
+      dts: true,
+      clean: true,
+      env: {
+        ...options.env,
+      },
+    },
   ];
 });
