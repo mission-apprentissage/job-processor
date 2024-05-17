@@ -20,7 +20,7 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
 
     /* Type Checking */
     "strict": true,
