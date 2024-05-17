@@ -29,6 +29,7 @@ export function CronTab(
 
   return (
     <Table
+      getRowId={(row) => row._id}
       rows={rows}
       columns={[
         {

@@ -39,6 +39,7 @@ export function JobsTab(
 
   return (
     <Table
+      getRowId={(row) => row._id}
       rows={rows}
       columns={[
         {

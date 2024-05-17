@@ -44,6 +44,7 @@ export function ProcessorStatusJobComponent(
 
   return (
     <Table
+      getRowId={(row) => row._id}
       rows={job.tasks}
       columns={[
         {

@@ -46,6 +46,7 @@ export function ProcessorStatusCronComponent(
     <>
       <Accordion label="Programmés">
         <Table
+          getRowId={(row) => row._id}
           rows={cron.scheduled}
           columns={[
             {
@@ -78,6 +79,7 @@ export function ProcessorStatusCronComponent(
       </Accordion>
       <Accordion label="En cours">
         <Table
+          getRowId={(row) => row._id}
           rows={cron.running}
           columns={[
             {
@@ -117,6 +119,7 @@ export function ProcessorStatusCronComponent(
       </Accordion>
       <Accordion label="Historique">
         <Table
+          getRowId={(row) => row._id}
           rows={cron.history}
           columns={[
             {

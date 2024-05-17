@@ -62,6 +62,7 @@ export function WorkersTab(
       </Accordion>
       <Accordion label="File d'attente">
         <Table
+          getRowId={(row) => row._id}
           rows={props.queue}
           columns={[
             {
