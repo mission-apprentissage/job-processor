@@ -1,4 +1,4 @@
-export { ProcessorStatusTaskomponent } from "./components/ProcessorStatusTaskomponent.tsx";
+export { ProcessorStatusTaskComponent } from "./components/ProcessorStatusTaskComponent.tsx";
 export { ProcessorStatusIndexComponent } from "./components/ProcessorStatusIndexComponent.tsx";
 export { ProcessorStatusCronComponent } from "./components/ProcessorStatusCronComponent.tsx";
 export { ProcessorStatusJobComponent } from "./components/ProcessorStatusJobComponent.tsx";

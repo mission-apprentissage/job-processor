@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
-import { getTaskStatus } from "./ProcessorStatusTaskomponent.tsx";
+import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 import { Table } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 

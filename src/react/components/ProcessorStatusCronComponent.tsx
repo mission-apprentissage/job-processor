@@ -6,7 +6,7 @@ import { Accordion } from "@codegouvfr/react-dsfr/Accordion.js";
 import { Table } from "./Table.tsx";
 import { useMemo } from "react";
 import { DsfrLink } from "./DsfrLink.tsx";
-import { getTaskStatus } from "./ProcessorStatusTaskomponent.tsx";
+import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 
 type ProcessorStatusCronComponentProps = {
   status: ProcessorStatusJson | null;

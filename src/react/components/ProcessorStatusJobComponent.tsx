@@ -5,7 +5,7 @@ import { fr } from "@codegouvfr/react-dsfr";
 import { Table } from "./Table.tsx";
 import { useMemo } from "react";
 import { DsfrLink } from "./DsfrLink.tsx";
-import { getTaskStatus } from "./ProcessorStatusTaskomponent.tsx";
+import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 import type { Jsonify } from "type-fest";
 import { IJobsSimple } from "../../data/model.ts";
 
