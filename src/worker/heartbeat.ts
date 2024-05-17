@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { getWorkerCollection } from "../data/actions.ts";
 import os from "node:os";
 import { getOptions } from "../setup.ts";
-import { captureException, flush } from "@sentry/node";
+import { captureException, flush } from "@sentry/core";
 import { EventEmitter } from "node:events";
 
 export const workerId = new ObjectId();

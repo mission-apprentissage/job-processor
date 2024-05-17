@@ -7,7 +7,7 @@ import {
 } from "../data/actions.ts";
 import { IJobsCron } from "../data/model.ts";
 import { ObjectId } from "mongodb";
-import { captureException } from "@sentry/node";
+import { captureException } from "@sentry/core";
 import { EventEmitter } from "node:events";
 
 function parseCronString(

@@ -1,4 +1,4 @@
-import { captureException } from "@sentry/node";
+import { captureException } from "@sentry/core";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
 import { IJobsSimple } from "./data/model.ts";
