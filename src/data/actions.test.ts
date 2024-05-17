@@ -1,5 +1,4 @@
-import { MongoClient } from "mongodb";
-import { ObjectId } from "bson";
+import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
 import {

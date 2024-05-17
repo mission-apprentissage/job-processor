@@ -2,7 +2,7 @@ import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { updateJob, getSimpleJob, getCronTaskJob } from "../data/actions.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 import { JobProcessorOptions, getOptions } from "../setup.ts";
-import { ObjectId } from "bson";
+import { ObjectId } from "mongodb";
 import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
 import { workerId } from "./heartbeat.ts";
 
