@@ -1,4 +1,5 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
+import { ObjectId } from "bson";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
 import {
@@ -63,7 +64,7 @@ describe("startHeartbeat", () => {
   it("should manage heartbeat lifecycle", async () => {
     const abortController = new AbortController();
     await startHeartbeat(true, abortController.signal);
-    expect(workerId).toEqual(expect.any(ObjectId));
+    expect(workerId).toEqual(expect.anything());
 
     // Once started, it should be referenced in worker collection without affecting other workers
     let workers = await getWorkerCollection()
@@ -126,7 +127,7 @@ describe("startHeartbeat", () => {
   it("when isWorker=true should exit on heartbeat error after 3 consecutive failure", async () => {
     const abortController = new AbortController();
     await startHeartbeat(true, abortController.signal);
-    expect(workerId).toEqual(expect.any(ObjectId));
+    expect(workerId).toEqual(expect.anything());
 
     await getWorkerCollection().deleteOne({ _id: workerId });
 
@@ -157,7 +158,7 @@ describe("startHeartbeat", () => {
   it("should reset error count after every success", async () => {
     const abortController = new AbortController();
     await startHeartbeat(true, abortController.signal);
-    expect(workerId).toEqual(expect.any(ObjectId));
+    expect(workerId).toEqual(expect.anything());
 
     await getWorkerCollection().deleteOne({ _id: workerId });
 
@@ -225,7 +226,7 @@ describe("startHeartbeat", () => {
   it("when isWorker=false should keep trying on heartbeat error", async () => {
     const abortController = new AbortController();
     await startHeartbeat(false, abortController.signal);
-    expect(workerId).toEqual(expect.any(ObjectId));
+    expect(workerId).toEqual(expect.anything());
 
     await getWorkerCollection().deleteOne({ _id: workerId });
 

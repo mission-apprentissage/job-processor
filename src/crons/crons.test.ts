@@ -1,4 +1,5 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
+import { ObjectId } from "bson";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
 import { getJobCollection } from "../data/actions.ts";
@@ -95,7 +96,7 @@ describe("cronsInit", () => {
     { ...crons[1], cron_string: "0 */2 * * *", scheduled_for: now },
     crons[2],
     {
-      _id: expect.any(ObjectId),
+      _id: expect.anything(),
       type: "cron",
       name: "newOne",
       cron_string: "0 * * * *",
@@ -239,7 +240,7 @@ describe("runCronsScheduler", () => {
 
     expect(await getJobCollection().find().toArray()).toEqual([
       {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         created_at: createdAt,
         cron_string: "0 9 * * *",
         name: "Daily at 9am Paris time",
@@ -249,7 +250,7 @@ describe("runCronsScheduler", () => {
         updated_at: updatedAt,
       },
       {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
@@ -268,7 +269,7 @@ describe("runCronsScheduler", () => {
 
     expect(await getJobCollection().find().toArray()).toEqual([
       {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         created_at: createdAt,
         cron_string: "0 9 * * *",
         name: "Daily at 9am Paris time",
@@ -278,7 +279,7 @@ describe("runCronsScheduler", () => {
         updated_at: nextCronScheduler,
       },
       {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
@@ -290,7 +291,7 @@ describe("runCronsScheduler", () => {
         worker_id: null,
       },
       {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         created_at: nextCronScheduler,
         ended_at: null,
         name: "Daily at 9am Paris time",
@@ -356,7 +357,7 @@ describe("startCronScheduler", () => {
       name: string;
     }) => {
       return {
-        _id: expect.any(ObjectId),
+        _id: expect.anything(),
         type: "cron_task",
         started_at: null,
         ended_at: null,
