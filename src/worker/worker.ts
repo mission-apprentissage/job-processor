@@ -5,7 +5,7 @@ import {
   captureException,
   runWithAsyncContext,
   getCurrentHub,
-} from "@sentry/core";
+} from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { workerId } from "./heartbeat.ts";
 

@@ -34,7 +34,7 @@ export function getTaskStatus(task: Jsonify<IJob> | null | undefined) {
   }
 }
 
-type ProcessorStatusTaskComponentProps = {
+type ProcessorStatusTaskomponentProps = {
   status: ProcessorStatusJson | null;
   type: "cron" | "job";
   baseUrl: string;
@@ -42,8 +42,8 @@ type ProcessorStatusTaskComponentProps = {
   id: string;
 };
 
-export function ProcessorStatusTaskComponent(
-  props: ProcessorStatusTaskComponentProps,
+export function ProcessorStatusTaskomponent(
+  props: ProcessorStatusTaskomponentProps,
 ) {
   const { status, name, type, id } = props;
   const task = useMemo(() => {
