@@ -17,7 +17,7 @@
     "yarn": "please-use-npm"
   },
   "scripts": {
-    "lint": "eslint --ignore-path .gitignore --cache --ext .js,.ts,.cjs .",
+    "lint": "eslint --ignore-path .gitignore --cache --ext .js,.ts,.tsx,.cjs .",
     "lint:fix": "npm run lint -- --fix",
     "prettier:fix": "prettier --write -u .",
     "prettier:check": "prettier --check -u .",
@@ -31,15 +31,23 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "@codegouvfr/react-dsfr": "^1.9.11",
+    "@mui/material": "^5.15.18",
+    "@mui/x-data-grid": "^7.5.0",
     "mongodb": "*",
+    "react": "^18.0.0",
     "zod": "^3.0.0",
     "zod-mongodb-schema": "^1.0.0"
   },
   "devDependencies": {
+    "@codegouvfr/react-dsfr": "^1.9.11",
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.3.0",
+    "@mui/material": "^5.15.18",
+    "@mui/x-data-grid": "^7.5.0",
     "@semantic-release/changelog": "^6.0.3",
+    "@types/react": "^18.3.2",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
     "eslint": "^8.57.0",
@@ -51,6 +59,7 @@
     "lint-staged": "^15.2.2",
     "mongodb": "^6.6.2",
     "prettier": "^3.2.5",
+    "react": "^18.3.1",
     "semantic-release": "^23.1.1",
     "semantic-release-slack-bot": "^4.0.2",
     "sentry-testkit": "^5.0.9",
@@ -77,6 +86,7 @@
   "dependencies": {
     "@sentry/node": "^7.80.0",
     "cron-parser": "^4.9.0",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "type-fest": "^4.18.2"
   }
 }

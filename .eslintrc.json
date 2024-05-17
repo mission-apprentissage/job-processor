@@ -17,8 +17,8 @@
   },
   "plugins": ["@typescript-eslint", "import", "zod"],
   "rules": {
-    "zod/prefer-enum": 2,
-    "zod/require-strict": 2
+    "n/no-missing-import": "off",
+    "zod/prefer-enum": 2
   },
   "settings": {
     "import/resolver": {

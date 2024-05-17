@@ -1,48 +1,64 @@
+import type { Jsonify } from "type-fest";
 import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 import {
   IJob,
-  IJobsCron,
   IJobsCronTask,
   IJobsSimple,
   IWorker,
+  ZJobCron,
+  ZJobCronTask,
+  ZJobSimple,
+  ZWorker,
   isJobCron,
   isJobCronTask,
   isJobSimple,
   isJobSimpleOrCronTask,
 } from "../data/model.ts";
+import { z } from "zod";
 
-export type WorkerStatus = {
-  worker: IWorker;
-  job: IJobsSimple | IJobsCronTask | null;
-};
+const zWorkerStatus = z.object({
+  worker: ZWorker,
+  task: z.union([ZJobSimple, ZJobCronTask, z.null()]),
+});
 
-export type CronStatus = {
-  cron: IJobsCron;
-  scheduled: IJobsCronTask[];
-  running: IJobsCronTask[];
-  history: IJobsCronTask[];
-};
+const zCronStatus = z.object({
+  cron: ZJobCron,
+  scheduled: z.array(ZJobCronTask),
+  running: z.array(ZJobCronTask),
+  history: z.array(ZJobCronTask),
+});
 
-export type JobStatus = {
-  name: IJobsSimple["name"];
-  jobs: IJobsSimple[];
-};
+const zJobStatus = z.object({
+  name: z.string(),
+  tasks: z.array(z.union([ZJobSimple, ZJobCronTask])),
+});
 
-export type ProcessorStatus = {
-  workers: WorkerStatus[];
-  queue: Array<IJobsSimple | IJobsCronTask>;
-  jobs: JobStatus[];
-  crons: CronStatus[];
-};
+export const zProcessorStatus = z.object({
+  now: z.date(),
+  workers: z.array(zWorkerStatus),
+  queue: z.array(z.union([ZJobSimple, ZJobCronTask])),
+  jobs: z.array(zJobStatus),
+  crons: z.array(zCronStatus),
+});
+
+export type WorkerStatus = z.output<typeof zWorkerStatus>;
+
+export type CronStatus = z.output<typeof zCronStatus>;
+
+export type JobStatus = z.output<typeof zJobStatus>;
+
+export type ProcessorStatus = z.output<typeof zProcessorStatus>;
+
+export type ProcessorStatusJson = Jsonify<ProcessorStatus>;
 
 function buildWorkerStatus(workers: IWorker[], jobs: IJob[]): WorkerStatus[] {
   return workers.map((worker): WorkerStatus => {
-    const job =
+    const task =
       jobs.filter(isJobSimpleOrCronTask).find((job) => {
         return job.worker_id === worker._id;
       }) ?? null;
 
-    return { worker, job };
+    return { worker, task };
   });
 }
 
@@ -89,7 +105,7 @@ function buildJobStatus(jobs: IJob[]): JobStatus[] {
   return names.map((name) => {
     return {
       name,
-      jobs: jobs.filter(isJobSimple).filter((job) => job.name === name),
+      tasks: jobs.filter(isJobSimple).filter((job) => job.name === name),
     };
   });
 }
@@ -104,6 +120,7 @@ export async function getProcessorStatus(): Promise<ProcessorStatus> {
   ]);
 
   return {
+    now,
     workers: buildWorkerStatus(workers, jobs),
     queue: buildQueueStatus(jobs, now),
     crons: buildCronStatus(jobs),
