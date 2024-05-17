@@ -2,8 +2,8 @@ import { useMemo } from "react";
 
 import { Table } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
-import { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
+import { ProcessorStatusJson } from "../../common/model.ts";
 
 type JobRow = {
   _id: string;

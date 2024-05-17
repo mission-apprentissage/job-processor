@@ -3,4 +3,5 @@ export { ProcessorStatusIndexComponent } from "./components/ProcessorStatusIndex
 export { ProcessorStatusCronComponent } from "./components/ProcessorStatusCronComponent.tsx";
 export { ProcessorStatusJobComponent } from "./components/ProcessorStatusJobComponent.tsx";
 
-export type * from "../types.ts";
+export * from "../common/index.ts";
+export type * from "../common/index.ts";

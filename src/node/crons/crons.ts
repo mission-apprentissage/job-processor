@@ -5,7 +5,7 @@ import {
   findJobs,
   getJobCollection,
 } from "../data/actions.ts";
-import { IJobsCron } from "../data/model.ts";
+import { IJobsCron } from "../../common/model.ts";
 import { ObjectId } from "mongodb";
 import { captureException } from "@sentry/node";
 import { EventEmitter } from "node:events";

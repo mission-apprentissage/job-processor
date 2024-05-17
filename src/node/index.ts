@@ -1,7 +1,7 @@
 import { captureException } from "@sentry/node";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
-import { IJobsSimple } from "./data/model.ts";
+import { IJobsSimple } from "../common/model.ts";
 import { getLogger } from "./setup.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
 import { executeJob } from "./worker/worker.ts";
@@ -85,12 +85,9 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
 }
 
 export { initJobProcessor } from "./setup.ts";
-export * from "./data/model.ts";
+export * from "../common/index.ts";
+export type * from "../common/index.ts";
 
-export {
-  getProcessorStatus,
-  zProcessorStatus,
-} from "./monitoring/monitoring.ts";
-export type * from "./types.ts";
+export { getProcessorStatus } from "./monitoring/monitoring.ts";
 
 export { getSimpleJob } from "./data/actions.ts";

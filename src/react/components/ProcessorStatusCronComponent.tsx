@@ -1,5 +1,5 @@
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
-import type { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
+import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
 import { Accordion } from "@codegouvfr/react-dsfr/Accordion.js";

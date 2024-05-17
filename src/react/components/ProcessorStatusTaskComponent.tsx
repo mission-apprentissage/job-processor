@@ -4,8 +4,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import type { Jsonify } from "type-fest";
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
 
-import { IJob } from "../../data/model.ts";
-import { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
+import { IJob, ProcessorStatusJson } from "../../common/model.ts";
 import { useMemo } from "react";
 
 function formatDate(date: string | null | undefined) {

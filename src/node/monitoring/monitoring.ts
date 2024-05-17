@@ -1,55 +1,18 @@
-import type { Jsonify } from "type-fest";
 import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 import {
   IJob,
   IJobsCronTask,
   IJobsSimple,
   IWorker,
-  ZJobCron,
-  ZJobCronTask,
-  ZJobSimple,
-  ZWorker,
+  WorkerStatus,
+  CronStatus,
   isJobCron,
   isJobCronTask,
   isJobSimple,
+  JobStatus,
+  ProcessorStatus,
   isJobSimpleOrCronTask,
-} from "../data/model.ts";
-import { z } from "zod";
-
-const zWorkerStatus = z.object({
-  worker: ZWorker,
-  task: z.union([ZJobSimple, ZJobCronTask, z.null()]),
-});
-
-const zCronStatus = z.object({
-  cron: ZJobCron,
-  scheduled: z.array(ZJobCronTask),
-  running: z.array(ZJobCronTask),
-  history: z.array(ZJobCronTask),
-});
-
-const zJobStatus = z.object({
-  name: z.string(),
-  tasks: z.array(z.union([ZJobSimple, ZJobCronTask])),
-});
-
-export const zProcessorStatus = z.object({
-  now: z.date(),
-  workers: z.array(zWorkerStatus),
-  queue: z.array(z.union([ZJobSimple, ZJobCronTask])),
-  jobs: z.array(zJobStatus),
-  crons: z.array(zCronStatus),
-});
-
-export type WorkerStatus = z.output<typeof zWorkerStatus>;
-
-export type CronStatus = z.output<typeof zCronStatus>;
-
-export type JobStatus = z.output<typeof zJobStatus>;
-
-export type ProcessorStatus = z.output<typeof zProcessorStatus>;
-
-export type ProcessorStatusJson = Jsonify<ProcessorStatus>;
+} from "../../common/model.ts";
 
 function buildWorkerStatus(workers: IWorker[], jobs: IJob[]): WorkerStatus[] {
   return workers.map((worker): WorkerStatus => {

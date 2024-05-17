@@ -1,3 +1,4 @@
+import { Jsonify } from "type-fest";
 import { z } from "zod";
 import { zObjectId } from "zod-mongodb-schema";
 
@@ -113,3 +114,38 @@ export type IJobsCron = z.output<typeof ZJobCron>;
 export type IJobsCronTask = z.output<typeof ZJobCronTask>;
 
 export type IWorker = z.output<typeof ZWorker>;
+
+const zWorkerStatus = z.object({
+  worker: ZWorker,
+  task: z.union([ZJobSimple, ZJobCronTask, z.null()]),
+});
+
+const zCronStatus = z.object({
+  cron: ZJobCron,
+  scheduled: z.array(ZJobCronTask),
+  running: z.array(ZJobCronTask),
+  history: z.array(ZJobCronTask),
+});
+
+const zJobStatus = z.object({
+  name: z.string(),
+  tasks: z.array(z.union([ZJobSimple, ZJobCronTask])),
+});
+
+export const zProcessorStatus = z.object({
+  now: z.date(),
+  workers: z.array(zWorkerStatus),
+  queue: z.array(z.union([ZJobSimple, ZJobCronTask])),
+  jobs: z.array(zJobStatus),
+  crons: z.array(zCronStatus),
+});
+
+export type WorkerStatus = z.output<typeof zWorkerStatus>;
+
+export type CronStatus = z.output<typeof zCronStatus>;
+
+export type JobStatus = z.output<typeof zJobStatus>;
+
+export type ProcessorStatus = z.output<typeof zProcessorStatus>;
+
+export type ProcessorStatusJson = Jsonify<ProcessorStatus>;

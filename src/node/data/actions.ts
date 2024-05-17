@@ -6,7 +6,7 @@ import {
   IJobsSimple,
   IWorker,
   ZJob,
-} from "./model.ts";
+} from "../../common/model.ts";
 import type { Collection, Db, MongoServerError } from "mongodb";
 import { getOptions } from "../setup.ts";
 import { zodToMongoSchema } from "zod-mongodb-schema";

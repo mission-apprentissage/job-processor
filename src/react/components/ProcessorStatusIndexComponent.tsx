@@ -1,4 +1,4 @@
-import type { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
+import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { Tabs } from "@codegouvfr/react-dsfr/Tabs.js";
 import { fr } from "@codegouvfr/react-dsfr";

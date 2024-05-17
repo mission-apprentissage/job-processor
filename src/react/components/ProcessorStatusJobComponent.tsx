@@ -1,5 +1,5 @@
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
-import type { ProcessorStatusJson } from "../../monitoring/monitoring.ts";
+import { ProcessorStatusJson, IJobsSimple } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
 import { Table } from "./Table.tsx";
@@ -7,7 +7,6 @@ import { useMemo } from "react";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 import type { Jsonify } from "type-fest";
-import { IJobsSimple } from "../../data/model.ts";
 
 type ProcessorStatusJobComponentProps = {
   status: ProcessorStatusJson | null;
