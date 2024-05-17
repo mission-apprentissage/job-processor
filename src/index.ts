@@ -91,6 +91,6 @@ export {
   getProcessorStatus,
   zProcessorStatus,
 } from "./monitoring/monitoring.ts";
-export * from "./types.ts";
+export type * from "./types.ts";
 
 export { getSimpleJob } from "./data/actions.ts";
