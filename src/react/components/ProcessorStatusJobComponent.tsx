@@ -88,7 +88,7 @@ export function ProcessorStatusJobComponent(
           getActions: ({ row: { _id } }) => [
             <DsfrLink
               key="Voir"
-              href={new URL(`/job/${name}/${_id}`, props.baseUrl).href}
+              href={`${props.baseUrl}/job/${name}/${_id}`}
             />,
           ],
         },

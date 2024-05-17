@@ -74,10 +74,7 @@ export function JobsTab(
           headerName: "Voir",
           type: "actions",
           getActions: ({ row: { name } }) => [
-            <DsfrLink
-              key="Voir"
-              href={new URL(`/job/${name}`, props.baseUrl).href}
-            />,
+            <DsfrLink key="Voir" href={`${props.baseUrl}/job/${name}`} />,
           ],
         },
       ]}

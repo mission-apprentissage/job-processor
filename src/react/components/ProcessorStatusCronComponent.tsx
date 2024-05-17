@@ -70,7 +70,7 @@ export function ProcessorStatusCronComponent(
               getActions: ({ row: { _id } }) => [
                 <DsfrLink
                   key="Voir"
-                  href={new URL(`/cron/${name}/${_id}`, props.baseUrl).href}
+                  href={`${props.baseUrl}/cron/${name}/${_id}`}
                 />,
               ],
             },
@@ -110,7 +110,7 @@ export function ProcessorStatusCronComponent(
               getActions: ({ row: { _id } }) => [
                 <DsfrLink
                   key="Voir"
-                  href={new URL(`/cron/${name}/${_id}`, props.baseUrl).href}
+                  href={`${props.baseUrl}/cron/${name}/${_id}`}
                 />,
               ],
             },
@@ -149,7 +149,7 @@ export function ProcessorStatusCronComponent(
               getActions: ({ row: { _id } }) => [
                 <DsfrLink
                   key="Voir"
-                  href={new URL(`/cron/${name}/${_id}`, props.baseUrl).href}
+                  href={`${props.baseUrl}/cron/${name}/${_id}`}
                 />,
               ],
             },

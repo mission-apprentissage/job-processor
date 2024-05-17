@@ -65,10 +65,7 @@ export function CronTab(
           headerName: "Voir",
           type: "actions",
           getActions: ({ row: { name } }) => [
-            <DsfrLink
-              key="Voir"
-              href={new URL(`/cron/${name}`, props.baseUrl).href}
-            />,
+            <DsfrLink key="Voir" href={`${props.baseUrl}/cron/${name}`} />,
           ],
         },
       ]}
