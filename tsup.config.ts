@@ -4,6 +4,7 @@ export default defineConfig((options) => {
   return {
     entry: {
       index: "src/index.ts",
+      react: "src/react/index.ts",
     },
     watch: options.watch,
     target: "es2022",
