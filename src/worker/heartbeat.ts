@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import { getWorkerCollection } from "../data/actions.ts";
 import os from "node:os";
 import { getOptions } from "../setup.ts";
