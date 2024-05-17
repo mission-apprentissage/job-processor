@@ -129,7 +129,7 @@ const zCronStatus = z.object({
 
 const zJobStatus = z.object({
   name: z.string(),
-  tasks: z.array(z.union([ZJobSimple, ZJobCronTask])),
+  tasks: z.array(ZJobSimple),
 });
 
 export const zProcessorStatus = z.object({

@@ -1,12 +1,11 @@
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
-import { ProcessorStatusJson, IJobsSimple } from "../../common/model.ts";
+import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
 import { Table } from "./Table.tsx";
 import { useMemo } from "react";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
-import type { Jsonify } from "type-fest";
 
 type ProcessorStatusJobComponentProps = {
   status: ProcessorStatusJson | null;
@@ -78,8 +77,7 @@ export function ProcessorStatusJobComponent(
           field: "output.duration",
           headerName: "Durée",
           flex: 1,
-          valueGetter: ({ row }: { row: Jsonify<IJobsSimple> }) =>
-            row.output?.duration ?? null,
+          valueGetter: (_value, row) => row.output?.duration ?? null,
         },
         {
           field: "actions",
