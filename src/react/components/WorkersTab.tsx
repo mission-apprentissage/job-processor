@@ -80,7 +80,7 @@ export function WorkersTab(
               headerName: "Planifié pour",
               flex: 1,
               type: "dateTime",
-              valueGetter: ({ value }) => (value ? new Date(value) : null),
+              valueGetter: (value) => (value ? new Date(value) : null),
             },
           ]}
         />
