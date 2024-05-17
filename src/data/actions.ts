@@ -1,12 +1,4 @@
-import { ObjectId } from "bson";
-import type {
-  Collection,
-  Db,
-  MongoServerError,
-  Filter,
-  FindOptions,
-  MatchKeysAndValues,
-} from "mongodb";
+import { Filter, FindOptions, MatchKeysAndValues, ObjectId } from "mongodb";
 import {
   IJob,
   IJobsCron,
@@ -15,6 +7,7 @@ import {
   IWorker,
   ZJob,
 } from "./model.ts";
+import type { Collection, Db, MongoServerError } from "mongodb";
 import { getOptions } from "../setup.ts";
 import { zodToMongoSchema } from "zod-mongodb-schema";
 import { workerId } from "../worker/heartbeat.ts";
