@@ -1,5 +1,5 @@
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
+import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,

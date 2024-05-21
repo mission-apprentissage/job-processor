@@ -3,7 +3,7 @@ import { updateJob, getSimpleJob, getCronTaskJob } from "../data/actions.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { ObjectId } from "mongodb";
-import { IJobsCronTask, IJobsSimple } from "../data/model.ts";
+import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { workerId } from "./heartbeat.ts";
 
 vi.mock("../setup.ts", async (importOriginal) => {

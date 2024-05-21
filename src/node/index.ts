@@ -1,14 +1,47 @@
 import { captureException } from "@sentry/node";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
-import { IJobsSimple } from "./data/model.ts";
+import { IJobsSimple } from "../common/model.ts";
 import { getLogger } from "./setup.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
 import { executeJob } from "./worker/worker.ts";
 import { runJobProcessor } from "./worker/processor.ts";
 
-type AddJobSimpleParams = Pick<IJobsSimple, "name" | "payload"> &
-  Partial<Pick<IJobsSimple, "scheduled_for">> & { queued?: boolean };
+type ScheduleJobParams = Pick<IJobsSimple, "name" | "payload"> &
+  Partial<Pick<IJobsSimple, "scheduled_for">>;
+
+type AddJobSimpleParams = ScheduleJobParams & { queued?: boolean };
+
+export async function scheduleJob({
+  name,
+  payload,
+  scheduled_for = new Date(),
+}: ScheduleJobParams): Promise<IJobsSimple> {
+  const job = await createJobSimple({
+    name,
+    payload,
+    scheduled_for,
+    sync: false,
+  });
+
+  return job;
+}
+
+export async function createAndRunJob({
+  name,
+  payload,
+}: Pick<IJobsSimple, "name" | "payload">): Promise<number> {
+  const job = await createJobSimple({
+    name,
+    payload,
+    scheduled_for: new Date(),
+    sync: true,
+  });
+
+  const finallyCb = await startSyncHeartbeat();
+
+  return executeJob(job, null).finally(finallyCb);
+}
 
 export async function addJob({
   name,
@@ -16,20 +49,11 @@ export async function addJob({
   scheduled_for = new Date(),
   queued = false,
 }: AddJobSimpleParams): Promise<number> {
-  const job = await createJobSimple({
-    name,
-    payload,
-    scheduled_for,
-    sync: !queued,
-  });
-
-  if (!queued && job) {
-    const finallyCb = await startSyncHeartbeat();
-
-    return executeJob(job, null).finally(finallyCb);
+  if (queued) {
+    return scheduleJob({ name, payload, scheduled_for }).then(() => 0);
   }
 
-  return 0;
+  return createAndRunJob({ name, payload });
 }
 
 export async function startJobProcessor(signal: AbortSignal): Promise<void> {
@@ -61,7 +85,9 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
 }
 
 export { initJobProcessor } from "./setup.ts";
-export * from "./data/model.ts";
-export type * from "./data/model.ts";
+export * from "../common/index.ts";
+export type * from "../common/index.ts";
+
+export { getProcessorStatus } from "./monitoring/monitoring.ts";
 
 export { getSimpleJob } from "./data/actions.ts";

@@ -1,5 +1,5 @@
 import { Db } from "mongodb";
-import { IJobsCronTask, IJobsSimple } from "./data/model.ts";
+import { IJobsCronTask, IJobsSimple } from "../common/model.ts";
 import { configureDb } from "./data/actions.ts";
 
 export interface ILogger {
