@@ -5,6 +5,7 @@ import {
   captureException,
   runWithAsyncContext,
   getCurrentHub,
+  captureCheckIn,
 } from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { workerId } from "./heartbeat.ts";
@@ -193,10 +194,21 @@ export function executeJob(
       scope.setTag("job", job.name);
       scope.setContext("job", job);
     });
+    const checkInId = captureCheckIn({
+      monitorSlug: job.name,
+      status: "in_progress",
+    });
+
     const start = Date.now();
     try {
       const s = signal ?? new AbortController().signal;
-      return await runner(job, s);
+      const result = await runner(job, s);
+      captureCheckIn({
+        checkInId,
+        monitorSlug: job.name,
+        status: "ok",
+      });
+      return result;
     } finally {
       transaction?.setMeasurement(
         "job.execute",
@@ -204,6 +216,11 @@ export function executeJob(
         "millisecond",
       );
       transaction?.finish();
+      captureCheckIn({
+        checkInId,
+        monitorSlug: job.name,
+        status: "error",
+      });
     }
   });
 }
