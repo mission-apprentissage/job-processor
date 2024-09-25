@@ -1,5 +1,9 @@
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import {
+  IJobsCronTask,
+  IJobsSimple,
+  isJobCronTask,
+} from "../../common/model.ts";
 import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,
@@ -184,6 +188,8 @@ export function executeJob(
   signal: AbortSignal | null,
 ): Promise<number> {
   return runWithAsyncContext(async () => {
+    const isCronTask = isJobCronTask(job);
+    let checkInId: string | null = null;
     const hub = getCurrentHub();
     const transaction = hub?.startTransaction({
       name: `JOB: ${job.name}`,
@@ -194,21 +200,34 @@ export function executeJob(
       scope.setTag("job", job.name);
       scope.setContext("job", job);
     });
-    const checkInId = captureCheckIn({
-      monitorSlug: job.name,
-      status: "in_progress",
-    });
+    if (isCronTask) {
+      checkInId = captureCheckIn({
+        monitorSlug: job.name,
+        status: "in_progress",
+      });
+    }
 
     const start = Date.now();
     try {
       const s = signal ?? new AbortController().signal;
       const result = await runner(job, s);
-      captureCheckIn({
-        checkInId,
-        monitorSlug: job.name,
-        status: "ok",
-      });
+      isCronTask &&
+        checkInId !== null &&
+        captureCheckIn({
+          checkInId,
+          monitorSlug: job.name,
+          status: "ok",
+        });
       return result;
+    } catch (err) {
+      isCronTask &&
+        checkInId !== null &&
+        captureCheckIn({
+          checkInId,
+          monitorSlug: job.name,
+          status: "error",
+        });
+      throw err;
     } finally {
       transaction?.setMeasurement(
         "job.execute",
@@ -216,11 +235,6 @@ export function executeJob(
         "millisecond",
       );
       transaction?.finish();
-      captureCheckIn({
-        checkInId,
-        monitorSlug: job.name,
-        status: "error",
-      });
     }
   });
 }
