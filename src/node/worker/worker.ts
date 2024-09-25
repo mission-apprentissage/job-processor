@@ -1,5 +1,11 @@
-import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import {
+  getCronTaskJob,
+  getJobCollection,
+  getSimpleJob,
+  updateJob,
+} from "../data/actions.ts";
+import {
+  IJob,
   IJobsCronTask,
   IJobsSimple,
   isJobCronTask,
@@ -188,8 +194,6 @@ export function executeJob(
   signal: AbortSignal | null,
 ): Promise<number> {
   return runWithAsyncContext(async () => {
-    const isCronTask = isJobCronTask(job);
-    let checkInId: string | null = null;
     const hub = getCurrentHub();
     const transaction = hub?.startTransaction({
       name: `JOB: ${job.name}`,
@@ -200,33 +204,15 @@ export function executeJob(
       scope.setTag("job", job.name);
       scope.setContext("job", job);
     });
-    if (isCronTask) {
-      checkInId = captureCheckIn({
-        monitorSlug: job.name,
-        status: "in_progress",
-      });
-    }
-
+    await notifySentryJobStart(job);
     const start = Date.now();
     try {
       const s = signal ?? new AbortController().signal;
       const result = await runner(job, s);
-      isCronTask &&
-        checkInId !== null &&
-        captureCheckIn({
-          checkInId,
-          monitorSlug: job.name,
-          status: "ok",
-        });
+      await notifySentryJobEnd(job, true);
       return result;
     } catch (err) {
-      isCronTask &&
-        checkInId !== null &&
-        captureCheckIn({
-          checkInId,
-          monitorSlug: job.name,
-          status: "error",
-        });
+      await notifySentryJobEnd(job, false);
       throw err;
     } finally {
       transaction?.setMeasurement(
@@ -254,6 +240,7 @@ export async function reportJobCrash(
       if (!cronDef) {
         throw new Error("Cron not found");
       }
+      await notifySentryJobEnd(job, false);
       await cronDef.onJobExited?.(job);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -265,3 +252,80 @@ export async function reportJobCrash(
     );
   }
 }
+
+const notifySentryJobStart = async (job: IJob) => {
+  if (!isJobCronTask(job)) {
+    return;
+  }
+  const monitorConfig = getSentryMonitorConfig(job.name);
+  if (!monitorConfig) {
+    getLogger().error(
+      { _id: job._id },
+      `unexpected: could not find cron definition`,
+    );
+    return;
+  }
+  const checkInId = captureCheckIn(
+    {
+      monitorSlug: job.name,
+      status: "in_progress",
+    },
+    monitorConfig,
+  );
+  await getJobCollection().findOneAndUpdate(
+    { _id: job._id },
+    { $set: { sentry_id: checkInId } },
+  );
+};
+
+const notifySentryJobEnd = async (job: IJob, isSuccess: boolean) => {
+  if (!isJobCronTask(job)) {
+    return;
+  }
+  const monitorConfig = getSentryMonitorConfig(job.name);
+  if (!monitorConfig) {
+    getLogger().error(
+      { _id: job._id },
+      `unexpected: could not find cron definition`,
+    );
+    return;
+  }
+  const dbJob = await getJobCollection().findOne({ _id: job._id });
+  if (!dbJob) {
+    getLogger().error({ _id: job._id }, `unexpected: could not find job`);
+    return;
+  }
+  if (!isJobCronTask(dbJob)) {
+    getLogger().error({ _id: job._id }, `unexpected: not a cron task`);
+    return;
+  }
+  const { sentry_id } = dbJob;
+  if (!sentry_id) {
+    getLogger().error({ _id: job._id }, `unexpected: no sentry_id`);
+    return;
+  }
+  captureCheckIn(
+    {
+      checkInId: sentry_id,
+      monitorSlug: job.name,
+      status: isSuccess ? "ok" : "error",
+    },
+    monitorConfig,
+  );
+};
+
+const getSentryMonitorConfig = (jobName: string) => {
+  const cronDefOpt = getOptions().crons[jobName];
+  if (!cronDefOpt) {
+    return null;
+  }
+  return {
+    schedule: {
+      type: "crontab",
+      value: cronDefOpt.cron_string,
+    },
+    checkinMargin: 5, // In minutes. Optional.
+    maxRuntime: cronDefOpt.maxRuntimeInMinutes ?? 60, // In minutes. Optional.
+    timezone: "Europe/Paris", // Optional.
+  } as const;
+};

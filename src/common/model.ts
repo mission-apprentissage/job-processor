@@ -74,6 +74,10 @@ export const ZJobCronTask = z.object({
   worker_id: zObjectId
     .nullable()
     .describe("Worker ID handling the job when running"),
+  sentry_id: z
+    .string()
+    .nullish()
+    .describe("Id sentry pour le tracking d'exécution des jobs"),
 });
 
 export const ZJob = z.discriminatedUnion("type", [
