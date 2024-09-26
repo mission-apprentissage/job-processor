@@ -1,13 +1,14 @@
-import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
-import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
 import {
   captureException,
-  runWithAsyncContext,
   getCurrentHub,
+  runWithAsyncContext,
 } from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
+import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
 import { workerId } from "./heartbeat.ts";
+import { notifySentryJobEnd, notifySentryJobStart } from "./sentry.ts";
 
 function getJobSimpleDef(job: IJobsSimple): JobDef | null {
   const options = getOptions();
@@ -193,10 +194,16 @@ export function executeJob(
       scope.setTag("job", job.name);
       scope.setContext("job", job);
     });
+    await notifySentryJobStart(job);
     const start = Date.now();
     try {
       const s = signal ?? new AbortController().signal;
-      return await runner(job, s);
+      const result = await runner(job, s);
+      await notifySentryJobEnd(job, true);
+      return result;
+    } catch (err) {
+      await notifySentryJobEnd(job, false);
+      throw err;
     } finally {
       transaction?.setMeasurement(
         "job.execute",
@@ -223,6 +230,7 @@ export async function reportJobCrash(
       if (!cronDef) {
         throw new Error("Cron not found");
       }
+      await notifySentryJobEnd(job, false);
       await cronDef.onJobExited?.(job);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

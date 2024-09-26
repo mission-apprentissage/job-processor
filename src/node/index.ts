@@ -1,11 +1,11 @@
 import { captureException } from "@sentry/node";
+import { IJobsSimple } from "../common/model.ts";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
-import { IJobsSimple } from "../common/model.ts";
 import { getLogger } from "./setup.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
-import { executeJob } from "./worker/worker.ts";
 import { runJobProcessor } from "./worker/processor.ts";
+import { executeJob } from "./worker/worker.ts";
 
 type ScheduleJobParams = Pick<IJobsSimple, "name" | "payload"> &
   Partial<Pick<IJobsSimple, "scheduled_for">>;
@@ -84,10 +84,12 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   }
 }
 
-export { initJobProcessor } from "./setup.ts";
 export * from "../common/index.ts";
-export type * from "../common/index.ts";
+export { initJobProcessor } from "./setup.ts";
 
-export { getProcessorStatus } from "./monitoring/monitoring.ts";
+export {
+  getProcessorHealthcheck,
+  getProcessorStatus,
+} from "./monitoring/monitoring.ts";
 
 export { getSimpleJob } from "./data/actions.ts";

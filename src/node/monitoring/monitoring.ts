@@ -1,18 +1,18 @@
-import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 import {
+  CronStatus,
   IJob,
   IJobsCronTask,
   IJobsSimple,
-  IWorker,
-  WorkerStatus,
-  CronStatus,
   isJobCron,
   isJobCronTask,
   isJobSimple,
+  isJobSimpleOrCronTask,
+  IWorker,
   JobStatus,
   ProcessorStatus,
-  isJobSimpleOrCronTask,
+  WorkerStatus,
 } from "../../common/model.ts";
+import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 
 function buildWorkerStatus(workers: IWorker[], jobs: IJob[]): WorkerStatus[] {
   return workers.map((worker): WorkerStatus => {
@@ -88,5 +88,24 @@ export async function getProcessorStatus(): Promise<ProcessorStatus> {
     queue: buildQueueStatus(jobs, now),
     crons: buildCronStatus(jobs),
     jobs: buildJobStatus(jobs),
+  };
+}
+
+export async function getProcessorHealthcheck() {
+  const now = new Date();
+  const [workers, jobs] = await Promise.all([
+    getWorkerCollection().find().toArray(),
+    getJobCollection()
+      .find(
+        { status: { $nin: ["finished", "errored"] } },
+        { sort: { scheduled_for: -1 } },
+      )
+      .toArray(),
+  ]);
+
+  return {
+    now,
+    workers: buildWorkerStatus(workers, jobs),
+    queue: buildQueueStatus(jobs, now),
   };
 }

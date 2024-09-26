@@ -23,6 +23,7 @@ export type CronDef = {
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
+  maxRuntimeInMinutes?: number;
 };
 
 export type JobProcessorOptions = {

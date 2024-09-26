@@ -1,10 +1,10 @@
-import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { updateJob, getSimpleJob, getCronTaskJob } from "../data/actions.ts";
-import { executeJob, reportJobCrash } from "./worker.ts";
-import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { ObjectId } from "mongodb";
+import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
+import { JobProcessorOptions, getOptions } from "../setup.ts";
 import { workerId } from "./heartbeat.ts";
+import { executeJob, reportJobCrash } from "./worker.ts";
 
 vi.mock("../setup.ts", async (importOriginal) => {
   const mod = await importOriginal();
@@ -30,6 +30,16 @@ vi.mock("../data/actions.ts", async (importOriginal) => {
     updateJob: vi.fn(),
     getSimpleJob: vi.fn(),
     getCronTaskJob: vi.fn(),
+  };
+});
+
+vi.mock("./sentry.ts", async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    // @ts-expect-error not properly typed
+    ...original,
+    notifySentryJobStart: vi.fn(),
+    notifySentryJobEnd: vi.fn(),
   };
 });
 
