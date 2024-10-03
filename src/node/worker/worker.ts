@@ -1,8 +1,4 @@
-import {
-  captureException,
-  getCurrentHub,
-  runWithAsyncContext,
-} from "@sentry/node";
+import * as Sentry from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
@@ -61,7 +57,7 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        captureException(error);
+        Sentry.captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
       }
     }
@@ -72,7 +68,7 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        captureException(error);
+        Sentry.captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
       }
     }
@@ -99,13 +95,13 @@ function getJobAbortedCb(
       if (resumable === true) {
         await updateJob(job._id, { status: "paused", worker_id: null });
       } else {
-        captureException(new Error("[job-processor] Job aborted"), {
+        Sentry.captureException(new Error("[job-processor] Job aborted"), {
           extra: { job },
         });
         await onRunnerExit(startDate, job, "Interrupted", null, jobLogger);
       }
     } catch (err) {
-      captureException(err);
+      Sentry.captureException(err);
     }
   };
 }
@@ -156,7 +152,7 @@ async function runner(
       return 2;
     }
 
-    captureException(err);
+    Sentry.captureException(err);
     jobLogger.error(
       { err, writeErrors: err.writeErrors, error: err },
       "job error",
@@ -183,36 +179,71 @@ export function executeJob(
   job: IJobsCronTask | IJobsSimple,
   signal: AbortSignal | null,
 ): Promise<number> {
-  return runWithAsyncContext(async () => {
-    const hub = getCurrentHub();
-    const transaction = hub?.startTransaction({
-      name: `JOB: ${job.name}`,
-      op: "processor.job",
+  if ("runWithAsyncContext" in Sentry) {
+    return Sentry.runWithAsyncContext(async () => {
+      const hub = Sentry.getCurrentHub();
+      const transaction = hub?.startTransaction({
+        name: `JOB: ${job.name}`,
+        op: "processor.job",
+      });
+      hub?.configureScope((scope) => {
+        scope.setSpan(transaction);
+        scope.setTag("job", job.name);
+        scope.setContext("job", job);
+      });
+      await notifySentryJobStart(job);
+      const start = Date.now();
+      try {
+        const s = signal ?? new AbortController().signal;
+        const result = await runner(job, s);
+        await notifySentryJobEnd(job, true);
+        return result;
+      } catch (err) {
+        await notifySentryJobEnd(job, false);
+        throw err;
+      } finally {
+        transaction?.setMeasurement(
+          "job.execute",
+          Date.now() - start,
+          "millisecond",
+        );
+        transaction?.finish();
+      }
     });
-    hub?.configureScope((scope) => {
-      scope.setSpan(transaction);
-      scope.setTag("job", job.name);
+  } else {
+    // @ts-expect-error Sentry v8
+    return Sentry.withIsolationScope(async (scope: Sentry.Scope) => {
       scope.setContext("job", job);
-    });
-    await notifySentryJobStart(job);
-    const start = Date.now();
-    try {
-      const s = signal ?? new AbortController().signal;
-      const result = await runner(job, s);
-      await notifySentryJobEnd(job, true);
-      return result;
-    } catch (err) {
-      await notifySentryJobEnd(job, false);
-      throw err;
-    } finally {
-      transaction?.setMeasurement(
-        "job.execute",
-        Date.now() - start,
-        "millisecond",
+      Sentry.startSpan(
+        {
+          op: "processor.job",
+          name: `JOB: ${job.name}`,
+          tags: {
+            job: job.name,
+          },
+        },
+        async () => {
+          await notifySentryJobStart(job);
+          const start = Date.now();
+          try {
+            const s = signal ?? new AbortController().signal;
+            const result = await runner(job, s);
+            await notifySentryJobEnd(job, true);
+            return result;
+          } catch (err) {
+            await notifySentryJobEnd(job, false);
+            throw err;
+          } finally {
+            Sentry.setMeasurement(
+              "job.execute",
+              Date.now() - start,
+              "millisecond",
+            );
+          }
+        },
       );
-      transaction?.finish();
-    }
-  });
+    });
+  }
 }
 
 export async function reportJobCrash(
@@ -235,7 +266,7 @@ export async function reportJobCrash(
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    captureException(err);
+    Sentry.captureException(err);
     getLogger().error(
       { err, writeErrors: err.writeErrors, error: err },
       "reportJobCrash error",
