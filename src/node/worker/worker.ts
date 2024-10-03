@@ -214,7 +214,7 @@ export function executeJob(
     // @ts-expect-error Sentry v8
     return Sentry.withIsolationScope(async (scope: Sentry.Scope) => {
       scope.setContext("job", job);
-      Sentry.startSpan(
+      await Sentry.startSpan(
         {
           op: "processor.job",
           name: `JOB: ${job.name}`,
