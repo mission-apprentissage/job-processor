@@ -53,6 +53,7 @@ async function onRunnerExit(
     ended_at: endDate,
     worker_id: null,
   });
+  await notifySentryJobEnd(job, !error);
 
   if (job.type === "simple") {
     const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
@@ -199,11 +200,7 @@ export function executeJob(
     try {
       const s = signal ?? new AbortController().signal;
       const result = await runner(job, s);
-      await notifySentryJobEnd(job, true);
       return result;
-    } catch (err) {
-      await notifySentryJobEnd(job, false);
-      throw err;
     } finally {
       transaction?.setMeasurement(
         "job.execute",
