@@ -172,6 +172,10 @@ export async function startCronScheduler(signal: AbortSignal) {
       await runCronsScheduler();
     } catch (err) {
       if (!signal.aborted) {
+        getLogger().error(
+          { error: err },
+          "job-processor: cron scheduler failed",
+        );
         captureException(err);
       }
     }
@@ -180,7 +184,13 @@ export async function startCronScheduler(signal: AbortSignal) {
   signal.addEventListener(
     "abort",
     () => {
+      getLogger().info(
+        "job-processor: abort requested - stopping cron scheduler",
+      );
       clearInterval(intervalID);
+      getLogger().info(
+        "job-processor: abort requested - cron scheduler stopped",
+      );
     },
     { once: true },
   );

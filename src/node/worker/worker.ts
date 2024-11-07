@@ -58,8 +58,8 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        Sentry.captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
+        Sentry.captureException(error, { extra: { job } });
       }
     }
   } else {
@@ -69,8 +69,8 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        Sentry.captureException(error);
         jobLogger.error({ error, job }, "job-processor: onJobExited failed");
+        Sentry.captureException(error, { extra: { job } });
       }
     }
   }
@@ -96,13 +96,19 @@ function getJobAbortedCb(
       if (resumable === true) {
         await updateJob(job._id, { status: "paused", worker_id: null });
       } else {
-        Sentry.captureException(new Error("[job-processor] Job aborted"), {
+        const error = new Error("[job-processor] Job aborted");
+        Sentry.captureException(error, {
           extra: { job },
         });
+        getLogger().error({ error, job }, "job-processor: job aborted");
         await onRunnerExit(startDate, job, "Interrupted", null, jobLogger);
       }
     } catch (err) {
-      Sentry.captureException(err);
+      Sentry.captureException(err, { extra: { job } });
+      getLogger().error(
+        { error: err, job },
+        "job-processor: job abort unexpected error",
+      );
     }
   };
 }
@@ -153,7 +159,7 @@ async function runner(
       return 2;
     }
 
-    Sentry.captureException(err);
+    Sentry.captureException(err, { extra: { job } });
     jobLogger.error(
       { err, writeErrors: err.writeErrors, error: err },
       "job error",
@@ -263,9 +269,9 @@ export async function reportJobCrash(
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    Sentry.captureException(err);
+    Sentry.captureException(err, { extra: { job } });
     getLogger().error(
-      { err, writeErrors: err.writeErrors, error: err },
+      { err, writeErrors: err.writeErrors, error: err, job },
       "reportJobCrash error",
     );
   }

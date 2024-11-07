@@ -8,6 +8,7 @@ export const processorEventEmitter = new EventEmitter();
 
 export async function runJobProcessor(signal: AbortSignal): Promise<void> {
   if (signal.aborted) {
+    getLogger().info("job-processor: abort requested - stopping processor");
     return;
   }
 

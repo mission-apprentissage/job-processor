@@ -60,27 +60,45 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
   const teardownHeartbeat = await startHeartbeat(true, signal);
 
   try {
-    if (signal.aborted) return;
+    if (signal.aborted) {
+      getLogger().info(
+        "job-processor: abort already request - cancelling start",
+      );
+      return;
+    }
 
+    getLogger().info("job-processor: will initialise CRONs");
     await cronsInit();
 
-    if (signal.aborted) return;
+    if (signal.aborted) {
+      getLogger().info(
+        "job-processor: abort already request - cancelling start",
+      );
+      return;
+    }
 
+    getLogger().info("job-processor: will start CRON scheduler");
     await startCronScheduler(signal);
 
-    if (signal.aborted) return;
+    if (signal.aborted) {
+      getLogger().info(
+        "job-processor: abort already request - cancelling start",
+      );
+      return;
+    }
 
+    getLogger().info("job-processor: will start processor");
     await runJobProcessor(signal);
   } catch (error) {
     if (signal.reason !== error) {
-      getLogger().error({ error }, "Job processor crashed");
+      getLogger().error({ error }, "job-processor crashed");
       captureException(error);
       throw error;
     }
   } finally {
     // heartbeat need to be awaited to let last mongodb updates to run
     await teardownHeartbeat();
-    getLogger().info("Job processor stopped");
+    getLogger().info("job-processor stopped");
   }
 }
 
