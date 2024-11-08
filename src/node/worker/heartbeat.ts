@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getWorkerCollection } from "../data/actions.ts";
 import os from "node:os";
-import { getOptions } from "../setup.ts";
+import { getLogger, getOptions } from "../setup.ts";
 import { captureException, flush } from "@sentry/node";
 import { EventEmitter } from "node:events";
 
@@ -88,7 +88,7 @@ export async function startHeartbeat(
         successiveErrorsCount++;
 
         getOptions().logger.error({ error }, "job-processor: heartbeat failed");
-        captureException(error);
+        captureException(error, { extra: { workerId, successiveErrorsCount } });
 
         if (successiveErrorsCount < 3) {
           heartbeatEvent.emit("fail");
@@ -130,12 +130,21 @@ export async function startHeartbeat(
       async () => {
         clearInterval(intervalId);
 
+        getLogger().info("job-processor: abort requested - stopping heartbeat");
+
         if (isWorker) {
           await getWorkerCollection()
             .deleteOne({ _id: workerId })
-            .catch(captureException);
+            .catch((error) => {
+              getLogger().error(
+                { error },
+                "job-processor: worker self-removal failed",
+              );
+              captureException(error, { extra: { workerId } });
+            });
         }
 
+        getLogger().info("job-processor: abort requested - heartbeat stopped");
         heartbeatEvent.emit("stop");
         resolve(null);
       },
