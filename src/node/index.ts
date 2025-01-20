@@ -104,6 +104,7 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
 
 export * from "../common/index.ts";
 export { initJobProcessor } from "./setup.ts";
+export type * from "./setup.ts";
 
 export {
   getProcessorHealthcheck,
