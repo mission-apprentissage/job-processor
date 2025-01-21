@@ -43,7 +43,6 @@ async function createIndexes() {
       [
         { key: { type: 1, scheduled_for: 1 } },
         { key: { type: 1, status: 1, scheduled_for: 1 } },
-        { key: { type: 1, status: 1, worker_id: 1, started_at: 1 } },
         { key: { type: 1, name: 1 } },
         { key: { status: 1 } },
         {
