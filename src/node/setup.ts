@@ -15,6 +15,7 @@ export type JobDef = {
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
   resumable?: boolean;
+  tag?: string | null;
 };
 
 export type CronDef = {
@@ -24,6 +25,7 @@ export type CronDef = {
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
   maxRuntimeInMinutes?: number;
+  tag?: string | null;
 };
 
 export type JobProcessorOptions = {
@@ -31,6 +33,7 @@ export type JobProcessorOptions = {
   logger: ILogger;
   jobs: Record<string, JobDef>;
   crons: Record<string, CronDef>;
+  workerTags?: string[] | null;
 };
 
 let options: JobProcessorOptions | null = null;
@@ -48,6 +51,10 @@ export function getLogger(): ILogger {
 }
 
 export async function initJobProcessor(opts: JobProcessorOptions) {
+  if (opts.workerTags != null && opts.workerTags.length === 0) {
+    throw new Error("workerTags should not be empty");
+  }
+
   options = opts;
   await configureDb();
 }

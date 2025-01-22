@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { initJobProcessor } from "../setup.ts";
+import { getOptions, initJobProcessor } from "../setup.ts";
 import {
   detectExitedJobs,
   getCronTaskJob,
@@ -27,8 +27,36 @@ beforeAll(async () => {
       child: vi.fn() as any,
     },
     db: client.db(),
-    jobs: {},
-    crons: {},
+    jobs: {
+      anyOne: {
+        handler: vi.fn() as any,
+        tag: null,
+      },
+      onlyA: {
+        handler: vi.fn() as any,
+        tag: "A",
+      },
+      sameNameTagDiff: {
+        handler: vi.fn() as any,
+        tag: "B",
+      },
+    },
+    crons: {
+      anyOne: {
+        cron_string: "* * * * *",
+        handler: vi.fn() as any,
+      },
+      onlyB: {
+        cron_string: "* * * * *",
+        handler: vi.fn() as any,
+        tag: "B",
+      },
+      sameNameTagDiff: {
+        cron_string: "* * * * *",
+        handler: vi.fn() as any,
+        tag: "A",
+      },
+    },
   });
 
   return async () => {
@@ -54,7 +82,7 @@ beforeEach(async () => {
 
 function createSimpleJob(
   data: Pick<IJobsSimple, "status" | "scheduled_for"> &
-    Partial<Pick<IJobsSimple, "worker_id" | "started_at">>,
+    Partial<Pick<IJobsSimple, "worker_id" | "started_at" | "name">>,
 ): IJobsSimple {
   const now = new Date();
 
@@ -76,7 +104,7 @@ function createSimpleJob(
 
 function createCronTaskJob(
   data: Pick<IJobsCronTask, "status" | "scheduled_for"> &
-    Partial<Pick<IJobsCronTask, "worker_id" | "started_at">>,
+    Partial<Pick<IJobsCronTask, "worker_id" | "started_at" | "name">>,
 ): IJobsCronTask {
   const now = new Date();
 
@@ -98,6 +126,7 @@ function createWorker(
 ): IWorker {
   return {
     _id: new ObjectId(),
+    tags: null,
     ...data,
   };
 }
@@ -164,6 +193,89 @@ describe("pickNextJob", () => {
         status: "running",
         started_at: past,
       });
+    });
+
+    it("should pick tagged job if workerTags is null", async () => {
+      const jobs = [
+        createSimpleJob({
+          status: "pending",
+          scheduled_for: past,
+          name: "onlyA",
+        }),
+        createCronTaskJob({
+          status: "pending",
+          scheduled_for: agesAgo,
+          name: "onlyB",
+        }),
+      ] as const;
+      await getJobCollection().insertMany([...jobs]);
+
+      expect(await pickNextJob()).toEqual(jobs[1]);
+      expect(await pickNextJob()).toEqual(jobs[0]);
+      expect(await pickNextJob()).toBe(null);
+    });
+  });
+
+  describe("when worker tags are set", async () => {
+    beforeEach(async () => {
+      await initJobProcessor({
+        ...getOptions(),
+        workerTags: ["A"],
+      });
+    });
+
+    it("should pick jobs with null tag or matching tag", async () => {
+      const jobs = [
+        createSimpleJob({
+          status: "pending",
+          scheduled_for: past,
+          name: "onlyA",
+        }),
+        createSimpleJob({
+          status: "pending",
+          scheduled_for: past,
+          name: "anyOne",
+        }),
+        createSimpleJob({
+          status: "pending",
+          scheduled_for: agesAgo,
+          name: "sameNameTagDiff",
+        }),
+        createCronTaskJob({
+          status: "pending",
+          scheduled_for: agesAgo,
+          name: "anyOne",
+        }),
+        createCronTaskJob({
+          status: "pending",
+          scheduled_for: agesAgo,
+          name: "onlyB",
+        }),
+        createCronTaskJob({
+          status: "pending",
+          scheduled_for: agesAgo,
+          name: "sameNameTagDiff",
+        }),
+      ] as const;
+      await getJobCollection().insertMany([...jobs]);
+
+      const todo = [];
+      let next = await pickNextJob();
+      while (next !== null) {
+        todo.push(next._id.toString());
+        next = await pickNextJob();
+      }
+      todo.sort();
+
+      const expected = [
+        jobs[0]._id.toString(),
+        jobs[1]._id.toString(),
+        jobs[3]._id.toString(),
+        jobs[5]._id.toString(),
+      ];
+      expected.sort();
+
+      expect(todo).toEqual(expected);
     });
   });
 });

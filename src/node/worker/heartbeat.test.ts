@@ -17,11 +17,13 @@ const otherWorkers: IWorker[] = [
     _id: new ObjectId(),
     hostname: "a",
     lastSeen: new Date(startDate.getTime() - 1_000),
+    tags: null,
   },
   {
     _id: new ObjectId(),
     hostname: "b",
     lastSeen: new Date(startDate.getTime() - 500),
+    tags: null,
   },
 ];
 
@@ -76,6 +78,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       hostname: expect.any(String),
       lastSeen: startDate,
+      tags: null,
     });
 
     // It should have registered interval to update timer
@@ -95,6 +98,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       hostname: expect.any(String),
       lastSeen: new Date(startDate.getTime() + 30_000),
+      tags: null,
     });
 
     // Execute next interval
@@ -111,6 +115,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       hostname: expect.any(String),
       lastSeen: new Date(startDate.getTime() + 60_000),
+      tags: null,
     });
 
     abortController.abort();
@@ -180,6 +185,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       lastSeen: new Date(),
       hostname: "worker_1",
+      tags: null,
     });
 
     // Last interval
@@ -262,6 +268,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       hostname: expect.any(String),
       lastSeen: new Date(startDate.getTime() + 90_000),
+      tags: null,
     });
 
     const onStop = new Promise((resolve) =>
@@ -280,6 +287,7 @@ describe("startHeartbeat", () => {
       _id: workerId,
       hostname: expect.any(String),
       lastSeen: new Date(startDate.getTime() + 90_000),
+      tags: null,
     });
   });
 });
