@@ -2,9 +2,6 @@ import { Jsonify } from "type-fest";
 import { z } from "zod";
 import { zObjectId } from "zod-mongodb-schema";
 
-// TODO: BAL abort signal & retry
-// TODO: Resumable mecanism
-
 const zCronName = z.string().describe("Le nom de la tâche");
 
 export const ZJobSimple = z.object({
@@ -90,6 +87,11 @@ export const ZWorker = z.object({
   _id: zObjectId,
   hostname: z.string().describe("Hostname du worker"),
   lastSeen: z.date().describe("Date du dernier heartbeat reçu"),
+  tags: z
+    .string()
+    .array()
+    .nullable()
+    .describe("Liste des tags du worker à executer"),
 });
 
 export function isJobSimple(job: IJob): job is IJobsSimple {

@@ -43,6 +43,7 @@ async function createIndexes() {
       [
         { key: { type: 1, scheduled_for: 1 } },
         { key: { type: 1, status: 1, scheduled_for: 1 } },
+        { key: { type: 1, name: 1, status: 1, scheduled_for: 1 } },
         { key: { type: 1, name: 1 } },
         { key: { status: 1 } },
         {
@@ -111,8 +112,8 @@ type CreateJobSimpleParams = Pick<
 export const createJobSimple = async ({
   name,
   payload,
-  scheduled_for = new Date(),
-  sync = false,
+  scheduled_for,
+  sync,
 }: CreateJobSimpleParams): Promise<IJobsSimple> => {
   const now = new Date();
 
@@ -140,7 +141,7 @@ type CreateJobCronParams = Pick<
 export const createJobCron = async ({
   name,
   cron_string,
-  scheduled_for = new Date(),
+  scheduled_for,
 }: CreateJobCronParams): Promise<IJobsCron> => {
   const now = new Date();
 
@@ -236,14 +237,58 @@ export const updateJob = async (
   );
 };
 
+function getWorkerScopeJob(): Filter<IJob> {
+  const options = getOptions();
+  const workerTags = options.workerTags ?? null;
+
+  if (workerTags === null) {
+    return {
+      type: { $in: ["simple", "cron_task"] },
+    };
+  }
+
+  const jobNames = Object.entries(options.jobs)
+    .filter(([, def]) => {
+      const tag = def.tag ?? null;
+      if (tag === null) {
+        return true;
+      }
+
+      return workerTags.includes(tag);
+    })
+    .map(([name]) => name);
+
+  const taskNames = Object.entries(options.crons)
+    .filter(([, def]) => {
+      const tag = def.tag ?? null;
+      if (tag === null) {
+        return true;
+      }
+
+      return workerTags.includes(tag);
+    })
+    .map(([name]) => name);
+
+  return {
+    $or: [
+      { type: "simple", name: { $in: jobNames } },
+      { type: "cron_task", name: { $in: taskNames } },
+    ],
+  };
+}
+
 export async function pickNextJob(): Promise<
   IJobsCronTask | IJobsSimple | null
 > {
   return getJobCollection().findOneAndUpdate(
     {
-      type: { $in: ["simple", "cron_task"] },
-      status: { $in: ["paused", "pending"] },
-      scheduled_for: { $lte: new Date() },
+      $and: [
+        getWorkerScopeJob(),
+        {
+          status: { $in: ["paused", "pending"] },
+          scheduled_for: { $lte: new Date() },
+        },
+      ],
     },
     [
       {

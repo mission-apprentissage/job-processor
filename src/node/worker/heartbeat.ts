@@ -13,7 +13,7 @@ async function createWorker() {
   return getWorkerCollection().updateOne(
     { _id: workerId },
     {
-      $set: { lastSeen: new Date() },
+      $set: { lastSeen: new Date(), tags: getOptions().workerTags ?? null },
       $setOnInsert: {
         hostname: os.hostname(),
       },

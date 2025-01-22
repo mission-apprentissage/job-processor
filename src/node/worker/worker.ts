@@ -30,12 +30,12 @@ function stringifyError<T>(error: T): string | T {
 }
 
 async function onRunnerExit(
-  startDate: Date,
   job: IJobsCronTask | IJobsSimple,
   error: string | null,
   result: unknown,
   jobLogger: ILogger,
 ) {
+  const startDate = job.started_at ?? new Date();
   const endDate = new Date();
   const ts = endDate.getTime() - startDate.getTime();
   const duration =
@@ -80,7 +80,6 @@ async function onRunnerExit(
 
 function getJobAbortedCb(
   job: IJobsSimple | IJobsCronTask,
-  startDate: Date,
   jobLogger: ILogger,
 ): () => Promise<void> {
   return async () => {
@@ -101,7 +100,7 @@ function getJobAbortedCb(
           extra: { job },
         });
         getLogger().error({ error, job }, "job-processor: job aborted");
-        await onRunnerExit(startDate, job, "Interrupted", null, jobLogger);
+        await onRunnerExit(job, "Interrupted", null, jobLogger);
       }
     } catch (err) {
       Sentry.captureException(err, { extra: { job } });
@@ -125,15 +124,17 @@ async function runner(
   });
 
   jobLogger.info("job started");
-  const startDate = job.started_at ?? new Date();
+  job.started_at = job.started_at ?? new Date();
+  job.status = "running";
+  job.worker_id = workerId;
 
-  const onAbort = getJobAbortedCb(job, startDate, jobLogger);
+  const onAbort = getJobAbortedCb(job, jobLogger);
   signal.addEventListener("abort", onAbort, { once: true });
 
   await updateJob(job._id, {
-    status: "running",
-    started_at: startDate,
-    worker_id: workerId,
+    status: job.status,
+    started_at: job.started_at,
+    worker_id: job.worker_id,
   });
   let error: string | null = null;
   let result: unknown = undefined;
@@ -170,7 +171,6 @@ async function runner(
   signal.removeEventListener("abort", onAbort);
 
   const { status, duration } = await onRunnerExit(
-    startDate,
     job,
     error,
     result,
