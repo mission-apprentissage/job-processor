@@ -6,14 +6,6 @@ Il a été spécifiquement développé pour le template apprentissage et fonctio
 
 ## Installation
 
-NPM :
-
-```bash
-npm install job-processor
-```
-
-YARN :
-
 ```bash
 yarn add job-processor
 ```
