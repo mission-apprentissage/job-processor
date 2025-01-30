@@ -10,30 +10,30 @@ export interface ILogger {
   error(data: Record<string, unknown>, msg: string): unknown;
 }
 
-export type JobDef = {
+export type JobDef<T extends string = string> = {
   handler: (job: IJobsSimple, signal: AbortSignal) => Promise<unknown>;
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
   resumable?: boolean;
-  tag?: string | null;
+  tag?: T | null;
 };
 
-export type CronDef = {
+export type CronDef<T extends string = string> = {
   cron_string: string;
   handler: (signal: AbortSignal) => Promise<unknown>;
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
   maxRuntimeInMinutes?: number;
-  tag?: string | null;
+  tag?: T | null;
 };
 
-export type JobProcessorOptions = {
+export type JobProcessorOptions<T extends string = string> = {
   db: Db;
   logger: ILogger;
   jobs: Record<string, JobDef>;
   crons: Record<string, CronDef>;
-  workerTags?: string[] | null;
+  workerTags?: T[] | null;
 };
 
 let options: JobProcessorOptions | null = null;
