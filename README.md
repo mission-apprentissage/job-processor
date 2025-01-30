@@ -48,7 +48,7 @@ type JobDef = {
 ```
 
 - **handler** : Fonction asynchrone qui exécute la tâche. Reçoit le job et un signal d'annulation.
-- **onJobExited** : Fonction asynchrone appelée lorsque la tâche se termine, avec le dernier traitement du job en paramètre.
+- **onJobExited** : Fonction asynchrone appelée lorsque la tâche se termine, avec le dernier traitement du job en paramètre. Cette méthode est également appelé en cas de crash.
 - **resumable** : Indique si la tâche peut être reprise après un redémarrage (par défaut: `false`).
 - **tag** : Une chaîne permettant d'attribuer un job à un worker spécifique (par défaut: `null`).
 
