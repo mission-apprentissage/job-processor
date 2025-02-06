@@ -74,7 +74,9 @@ export function JobsTab(
           headerName: "Voir",
           type: "actions",
           getActions: ({ row: { name } }) => [
-            <DsfrLink key="Voir" href={`${props.baseUrl}/job/${name}`} />,
+            <WrappeDataGridAction key="Voir">
+              <DsfrLink href={`${props.baseUrl}/job/${name}`} />
+            </WrappeDataGridAction>,
           ],
         },
       ]}
