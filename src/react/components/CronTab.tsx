@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
-import { Table } from "./Table.tsx";
+import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { ProcessorStatusJson } from "../../common/model.ts";
 
