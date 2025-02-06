@@ -3,7 +3,7 @@ import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
 import { Accordion } from "@codegouvfr/react-dsfr/Accordion.js";
-import { Table } from "./Table.tsx";
+import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { useMemo } from "react";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
@@ -68,10 +68,9 @@ export function ProcessorStatusCronComponent(
               headerName: "Voir",
               type: "actions",
               getActions: ({ row: { _id } }) => [
-                <DsfrLink
-                  key="Voir"
-                  href={`${props.baseUrl}/cron/${name}/${_id}`}
-                />,
+                <WrappeDataGridAction key="Voir">
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
+                </WrappeDataGridAction>,
               ],
             },
           ]}
@@ -108,10 +107,9 @@ export function ProcessorStatusCronComponent(
               headerName: "Voir",
               type: "actions",
               getActions: ({ row: { _id } }) => [
-                <DsfrLink
-                  key="Voir"
-                  href={`${props.baseUrl}/cron/${name}/${_id}`}
-                />,
+                <WrappeDataGridAction key="Voir">
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
+                </WrappeDataGridAction>,
               ],
             },
           ]}
@@ -147,10 +145,9 @@ export function ProcessorStatusCronComponent(
               headerName: "Voir",
               type: "actions",
               getActions: ({ row: { _id } }) => [
-                <DsfrLink
-                  key="Voir"
-                  href={`${props.baseUrl}/cron/${name}/${_id}`}
-                />,
+                <WrappeDataGridAction key="Voir">
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
+                </WrappeDataGridAction>,
               ],
             },
           ]}
