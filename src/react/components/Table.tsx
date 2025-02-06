@@ -16,7 +16,10 @@ export function Table<R extends GridValidRowModel>(props: DataGridProps<R>) {
   );
 }
 
-export const WrappeDataGridAction: FC<{ children: ReactNode | undefined; touchRippleRef?: RefObject<unknown> }> = ({
+export const WrappeDataGridAction: FC<{
+  children: ReactNode | undefined;
+  touchRippleRef?: RefObject<unknown>;
+}> = ({
   children,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   touchRippleRef,

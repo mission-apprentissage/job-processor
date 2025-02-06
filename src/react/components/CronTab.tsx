@@ -67,8 +67,7 @@ export function CronTab(
           getActions: ({ row: { name } }) => [
             <WrappeDataGridAction key="Voir">
               <DsfrLink href={`${props.baseUrl}/cron/${name}`} />
-            </WrappeDataGridAction>
-            ,
+            </WrappeDataGridAction>,
           ],
         },
       ]}

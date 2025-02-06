@@ -85,9 +85,7 @@ export function ProcessorStatusJobComponent(
           type: "actions",
           getActions: ({ row: { _id } }) => [
             <WrappeDataGridAction key="Voir">
-              <DsfrLink
-                href={`${props.baseUrl}/job/${name}/${_id}`}
-              />
+              <DsfrLink href={`${props.baseUrl}/job/${name}/${_id}`} />
             </WrappeDataGridAction>,
           ],
         },

@@ -69,9 +69,7 @@ export function ProcessorStatusCronComponent(
               type: "actions",
               getActions: ({ row: { _id } }) => [
                 <WrappeDataGridAction key="Voir">
-                  <DsfrLink
-                    href={`${props.baseUrl}/cron/${name}/${_id}`}
-                  />
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
                 </WrappeDataGridAction>,
               ],
             },
@@ -110,9 +108,7 @@ export function ProcessorStatusCronComponent(
               type: "actions",
               getActions: ({ row: { _id } }) => [
                 <WrappeDataGridAction key="Voir">
-                  <DsfrLink
-                    href={`${props.baseUrl}/cron/${name}/${_id}`}
-                  />
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
                 </WrappeDataGridAction>,
               ],
             },
@@ -150,9 +146,7 @@ export function ProcessorStatusCronComponent(
               type: "actions",
               getActions: ({ row: { _id } }) => [
                 <WrappeDataGridAction key="Voir">
-                  <DsfrLink
-                    href={`${props.baseUrl}/cron/${name}/${_id}`}
-                  />
+                  <DsfrLink href={`${props.baseUrl}/cron/${name}/${_id}`} />
                 </WrappeDataGridAction>,
               ],
             },
