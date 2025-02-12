@@ -74,7 +74,7 @@ const getSentryMonitorConfig = (jobName: string) => {
       type: "crontab",
       value: cronDefOpt.cron_string,
     },
-    checkinMargin: 5, // In minutes. Optional.
+    checkinMargin: cronDefOpt.checkinMargin ?? 5, // In minutes. Optional.
     maxRuntime: cronDefOpt.maxRuntimeInMinutes ?? 60, // In minutes. Optional.
     timezone: "Europe/Paris", // Optional.
   } as const;

@@ -25,6 +25,7 @@ export type CronDef<T extends string = string> = {
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
   maxRuntimeInMinutes?: number;
+  checkinMargin?: number;
   tag?: T | null;
 };
 
