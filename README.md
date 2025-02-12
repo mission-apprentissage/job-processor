@@ -60,6 +60,7 @@ type CronDef = {
   handler: (signal: AbortSignal) => Promise<unknown>;
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
+  checkinMargin?: number;
   maxRuntimeInMinutes?: number;
   tag?: string | null;
 };
@@ -69,6 +70,7 @@ type CronDef = {
 - **handler** : Fonction asynchrone exécutant la tâche selon la planification.
 - **onJobExited** : Fonction asynchrone appelée lorsque la tâche se termine, avec le dernier traitement du job en paramètre. Cette méthode est également appelé en cas de crash.
 - **resumable** : Indique si la tâche CRON peut être reprise après un redémarrage.
+- **checkinMargin**: Tolérance en minutes pour le délai entre l'heure planifiée et l'heure d'exécution effective.
 - **maxRuntimeInMinutes** : Durée maximale d'exécution avant interruption forcée.
 - **tag** : Une chaîne permettant d'attribuer une tâche à un worker spécifique.
 
