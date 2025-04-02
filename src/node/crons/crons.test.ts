@@ -16,7 +16,7 @@ const now = new Date("2023-11-17T11:00:00.000Z");
 
 beforeAll(async () => {
   client = new MongoClient(
-    `mongodb://127.0.0.1:27018/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
+    `mongodb://127.0.0.1:27019/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
   );
   await client.connect();
 
@@ -306,7 +306,7 @@ describe("runCronsScheduler", () => {
 });
 
 describe("startCronScheduler", () => {
-  describe("witout crons", () => {
+  describe("without crons", () => {
     it("should not start interval when no crons are setup", async () => {
       const options = {
         logger: {
