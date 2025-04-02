@@ -88,6 +88,7 @@ export async function cronsInit() {
       {
         returnDocument: "before",
         upsert: true,
+        includeResultMetadata: false,
       },
     );
 

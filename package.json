@@ -12,7 +12,7 @@
   "author": "Moroine <moroine.bentefrit@beta.gouv.fr>",
   "license": "MIT",
   "engines": {
-    "node": ">=20",
+    "node": ">=20.3",
     "npm": ">=10.0.0",
     "yarn": "please-use-npm"
   },
