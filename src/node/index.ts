@@ -56,7 +56,12 @@ export async function addJob({
   return createAndRunJob({ name, payload });
 }
 
-export async function startJobProcessor(signal: AbortSignal): Promise<void> {
+export async function startJobProcessor(
+  sourceSignal: AbortSignal,
+): Promise<void> {
+  const ctrl = new AbortController();
+  const signal = AbortSignal.any([sourceSignal, ctrl.signal]);
+
   const teardownHeartbeat = await startHeartbeat(true, signal);
 
   try {
@@ -96,6 +101,11 @@ export async function startJobProcessor(signal: AbortSignal): Promise<void> {
       throw error;
     }
   } finally {
+    if (!signal.aborted) {
+      // Unexpected error, we need to abort to cancel heartbeat
+      ctrl.abort();
+    }
+
     // heartbeat need to be awaited to let last mongodb updates to run
     await teardownHeartbeat();
     getLogger().info("job-processor stopped");

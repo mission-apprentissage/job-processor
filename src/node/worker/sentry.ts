@@ -22,7 +22,7 @@ export const notifySentryJobStart = async (job: IJob) => {
     },
     monitorConfig,
   );
-  await getJobCollection().findOneAndUpdate(
+  await getJobCollection().updateOne(
     { _id: job._id },
     { $set: { sentry_id: checkInId } },
   );
