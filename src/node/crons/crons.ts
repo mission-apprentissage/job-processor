@@ -45,15 +45,22 @@ export async function cronsInit() {
 
   const CRONS = getCrons();
 
-  await getJobCollection().deleteMany({
+  const cronDeleteResult = await getJobCollection().deleteMany({
     name: { $nin: CRONS.map((c) => c.name) },
     type: "cron",
   });
-  await getJobCollection().deleteMany({
+  const cronTaskResult = await getJobCollection().deleteMany({
     name: { $nin: CRONS.map((c) => c.name) },
     status: "pending",
     type: "cron_task",
   });
+
+  if (cronDeleteResult.deletedCount > 0 || cronTaskResult.deletedCount > 0) {
+    getLogger().info(
+      { cronDeleteResult, cronTaskResult },
+      `job_processor: old cron cleanup`,
+    );
+  }
 
   for (const cron of CRONS) {
     // Atomic operation to prevent concurrency conflict
@@ -103,24 +110,38 @@ export async function cronsInit() {
 
       if (existingCrons.length > 1 && existingCrons[0]) {
         // Just keep the first one
-        await getJobCollection().deleteMany({
+        const deleteResult = await getJobCollection().deleteMany({
           name: cron.name,
           type: "cron",
           _id: { $ne: existingCrons[0]._id },
         });
+        getLogger().info(
+          { existingCrons, cron, deleteResult },
+          `job_processor: cron concurrency issue`,
+        );
       }
     }
 
     if (oldJob !== null && oldJob.cron_string !== cron.cron_string) {
-      await getJobCollection().updateOne(
+      const updateResult = await getJobCollection().updateOne(
         { _id: oldJob._id },
         { $set: { scheduled_for: now, updated_at: now } },
       );
-      await getJobCollection().deleteMany({
+      const deleteResult = await getJobCollection().deleteMany({
         name: cron.name,
         status: "pending",
         type: "cron_task",
       });
+      getLogger().info(
+        {
+          oldJob: { ...oldJob, _id: oldJob._id.toString() },
+          now,
+          cron,
+          updateResult,
+          deleteResult,
+        },
+        `job_processor: cron schedule updated`,
+      );
     }
   }
 }
