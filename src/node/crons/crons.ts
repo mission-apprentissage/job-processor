@@ -1,4 +1,4 @@
-import cronParser from "cron-parser";
+import { CronExpressionParser } from "cron-parser";
 import { CronDef, getLogger, getOptions } from "../setup.ts";
 import {
   createJobCronTask,
@@ -15,7 +15,7 @@ function parseCronString(
   cronString: string,
   options: { currentDate: string } | object = {},
 ): Date {
-  const iterator = cronParser.parseExpression(cronString, {
+  const iterator = CronExpressionParser.parse(cronString, {
     tz: "Europe/Paris",
     ...options,
   });
