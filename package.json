@@ -31,7 +31,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@sentry/node": "^7.51.1 || ^8.0.0",
+    "@sentry/node": "^7.51.1 || ^8.0.0 || ^9.12.0",
     "@codegouvfr/react-dsfr": "^1.9.11",
     "@mui/material": "^5.15.18",
     "@mui/x-data-grid": "^7.5.0",
