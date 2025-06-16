@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   mongodb:
-    image: mongo:6.0.2-focal
+    image: mongo:7
     ports:
       - "127.0.0.1:27019:27017"
     healthcheck:

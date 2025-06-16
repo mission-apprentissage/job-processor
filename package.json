@@ -31,14 +31,14 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@sentry/node": "^7.51.1 || ^8.0.0",
-    "@codegouvfr/react-dsfr": "^1.9.11",
-    "@mui/material": "^5.15.18",
-    "@mui/x-data-grid": "^7.5.0",
+    "@sentry/node": "^9.29.0",
+    "@codegouvfr/react-dsfr": "^1.25.3",
+    "@mui/material": "^7.1.1",
+    "@mui/x-data-grid": "^8.5.2",
     "mongodb": "*",
-    "react": "^18.0.0 || ^19.0.0",
-    "zod": "^3.0.0",
-    "zod-mongodb-schema": "^1.0.0"
+    "react": "^19.1.0",
+    "zod": "^3.25.64",
+    "zod-mongodb-schema": "^2.0.0-next.1"
   },
   "peerDependenciesMeta": {
     "@codegouvfr/react-dsfr": {
@@ -55,14 +55,14 @@
     }
   },
   "devDependencies": {
-    "@codegouvfr/react-dsfr": "^1.9.11",
-    "@commitlint/cli": "^19.8.0",
-    "@commitlint/config-conventional": "^19.8.0",
-    "@eslint-community/eslint-plugin-eslint-comments": "^4.4.1",
-    "@mui/material": "^5.17.1",
-    "@mui/x-data-grid": "^7.28.2",
+    "@codegouvfr/react-dsfr": "^1.25.3",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
+    "@mui/material": "^7.1.1",
+    "@mui/x-data-grid": "^8.5.2",
     "@semantic-release/changelog": "^6.0.3",
-    "@types/react": "^19.1.0",
+    "@types/react": "^19.1.8",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
@@ -71,19 +71,17 @@
     "eslint-plugin-n": "^17.17.0",
     "eslint-plugin-zod": "^1.4.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.0",
-    "mongodb": "^6.15.0",
+    "lint-staged": "^16.1.0",
+    "mongodb": "^6.17.0",
     "prettier": "^3.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "semantic-release": "^24.2.3",
-    "semantic-release-slack-bot": "^4.0.2",
-    "sentry-testkit": "^5.0.10",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.2",
-    "vitest": "^3.1.1",
-    "zod": "^3.24.2",
-    "zod-mongodb-schema": "^1.0.2"
+    "semantic-release": "^24.2.5",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3",
+    "zod": "^3.25.65",
+    "zod-mongodb-schema": "^2.0.0-next.1"
   },
   "lint-staged": {
     "*.{js,ts}": [
@@ -100,8 +98,8 @@
     "dist/**/*"
   ],
   "dependencies": {
-    "cron-parser": "^5.1.0",
+    "cron-parser": "^5.3.0",
     "date-fns": "^4.1.0",
-    "type-fest": "^4.39.0"
+    "type-fest": "^4.41.0"
   }
 }

@@ -186,67 +186,31 @@ export function executeJob(
   job: IJobsCronTask | IJobsSimple,
   signal: AbortSignal | null,
 ): Promise<number> {
-  if ("runWithAsyncContext" in Sentry) {
-    return Sentry.runWithAsyncContext(async () => {
-      const hub = Sentry.getCurrentHub();
-      const transaction = hub?.startTransaction({
-        name: `JOB: ${job.name}`,
+  return Sentry.withIsolationScope(async (scope: Sentry.Scope) => {
+    scope.setContext("job", job);
+    return await Sentry.startSpan(
+      {
         op: "processor.job",
-      });
-      hub?.configureScope((scope) => {
-        scope.setSpan(transaction);
-        scope.setTag("job", job.name);
-        scope.setContext("job", job);
-      });
-      await notifySentryJobStart(job);
-      const start = Date.now();
-      try {
-        const s = signal ?? new AbortController().signal;
-        const result = await runner(job, s);
-        await notifySentryJobEnd(job, true);
-        return result;
-      } catch (err) {
-        await notifySentryJobEnd(job, false);
-        throw err;
-      } finally {
-        transaction?.setMeasurement(
-          "job.execute",
-          Date.now() - start,
-          "millisecond",
-        );
-        transaction?.finish();
-      }
-    });
-  } else {
-    // @ts-expect-error Sentry v8
-    return Sentry.withIsolationScope(async (scope: Sentry.Scope) => {
-      scope.setContext("job", job);
-      return await Sentry.startSpan(
-        {
-          op: "processor.job",
-          name: `JOB: ${job.name}`,
-          tags: {
-            job: job.name,
-          },
-        },
-        async () => {
-          await notifySentryJobStart(job);
-          const start = Date.now();
-          try {
-            const s = signal ?? new AbortController().signal;
-            const result = await runner(job, s);
-            return result;
-          } finally {
-            Sentry.setMeasurement(
-              "job.execute",
-              Date.now() - start,
-              "millisecond",
-            );
-          }
-        },
-      );
-    });
-  }
+        name: `JOB: ${job.name}`,
+      },
+      async () => {
+        Sentry.getCurrentScope().setTag("job", job.name);
+        await notifySentryJobStart(job);
+        const start = Date.now();
+        try {
+          const s = signal ?? new AbortController().signal;
+          const result = await runner(job, s);
+          return result;
+        } finally {
+          Sentry.setMeasurement(
+            "job.execute",
+            Date.now() - start,
+            "millisecond",
+          );
+        }
+      },
+    );
+  });
 }
 
 export async function reportJobCrash(
