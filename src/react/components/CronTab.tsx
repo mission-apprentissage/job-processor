@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 
+import type { ProcessorStatusJson } from "../../common/model.ts";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
-import { ProcessorStatusJson } from "../../common/model.ts";
 
 export function CronTab(
   props: Pick<ProcessorStatusJson, "crons"> & { baseUrl: string },

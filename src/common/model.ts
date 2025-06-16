@@ -1,4 +1,4 @@
-import { Jsonify } from "type-fest";
+import type { Jsonify } from "type-fest";
 import { z } from "zod/v4-mini";
 import { zObjectId } from "zod-mongodb-schema";
 

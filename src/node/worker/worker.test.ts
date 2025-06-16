@@ -1,9 +1,11 @@
 import { ObjectId } from "mongodb";
-import { Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import type { Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import { JobProcessorOptions, getOptions } from "../setup.ts";
-import { workerId } from "./heartbeat.ts";
+import type { JobProcessorOptions } from "../setup.ts";
+import { getOptions } from "../options.ts";
+import { workerId } from "./workerId.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 
 vi.mock("../setup.ts", async (importOriginal) => {

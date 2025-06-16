@@ -2,7 +2,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
 import { getJobCollection } from "../data/actions.ts";
-import { IJobsCron, IJobsCronTask } from "../index.ts";
+import type { IJobsCron, IJobsCronTask } from "../index.ts";
 import {
   cronSchedulerEvent,
   cronsInit,

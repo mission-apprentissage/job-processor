@@ -1,9 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { processorEventEmitter, runJobProcessor } from "./processor.ts";
 import { MongoClient } from "mongodb";
 import { initJobProcessor } from "../setup.ts";
 import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 import { addJob } from "../index.ts";
+import { processorEventEmitter, runJobProcessor } from "./processor.ts";
 
 describe("runJobProcessor", () => {
   let client: MongoClient | null;

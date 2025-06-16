@@ -1,6 +1,9 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { getOptions, initJobProcessor } from "../setup.ts";
+import { initJobProcessor } from "../setup.ts";
+import type { IJobsCronTask, IJobsSimple, IWorker } from "../index.ts";
+import { workerId } from "../worker/workerId.ts";
+import { getOptions } from "../options.ts";
 import {
   detectExitedJobs,
   getCronTaskJob,
@@ -8,9 +11,7 @@ import {
   getSimpleJob,
   getWorkerCollection,
   pickNextJob,
-} from "../data/actions.ts";
-import { IJobsCronTask, IJobsSimple, IWorker } from "../index.ts";
-import { workerId } from "../worker/heartbeat.ts";
+} from "./actions.ts";
 
 let client: MongoClient | null;
 

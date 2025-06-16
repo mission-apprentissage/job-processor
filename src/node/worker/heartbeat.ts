@@ -1,11 +1,10 @@
-import { ObjectId } from "mongodb";
-import { getWorkerCollection } from "../data/actions.ts";
 import os from "node:os";
-import { getLogger, getOptions } from "../setup.ts";
-import { captureException, flush } from "@sentry/node";
 import { EventEmitter } from "node:events";
-
-export const workerId = new ObjectId();
+import { captureException, flush } from "@sentry/node";
+import { getWorkerCollection } from "../data/actions.ts";
+import { getLogger } from "../setup.ts";
+import { getOptions } from "../options.ts";
+import { workerId } from "./workerId.ts";
 
 export const heartbeatEvent = new EventEmitter();
 
@@ -152,5 +151,5 @@ export async function startHeartbeat(
     );
   });
 
-  return () => teardownPromise;
+  return async () => teardownPromise;
 }

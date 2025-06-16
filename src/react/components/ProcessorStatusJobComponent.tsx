@@ -1,9 +1,9 @@
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
-import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
-import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { useMemo } from "react";
+import type { ProcessorStatusJson } from "../../common/model.ts";
+import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 

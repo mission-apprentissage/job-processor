@@ -1,12 +1,13 @@
+import type { Options } from "tsup";
 import { defineConfig } from "tsup";
 
-export default defineConfig((options) => {
+export default defineConfig((options: Options): Options[] => {
   return [
     {
       entry: {
         index: "src/node/index.ts",
       },
-      watch: options.watch,
+      watch: Boolean(options.watch),
       target: "es2022",
       platform: "node",
       format: ["esm"],
@@ -24,7 +25,7 @@ export default defineConfig((options) => {
       entry: {
         react: "src/react/index.ts",
       },
-      watch: options.watch,
+      watch: Boolean(options.watch),
       target: "es2022",
       platform: "neutral",
       format: ["esm"],
@@ -42,7 +43,7 @@ export default defineConfig((options) => {
       entry: {
         core: "src/common/index.ts",
       },
-      watch: options.watch,
+      watch: Boolean(options.watch),
       target: "es2022",
       platform: "neutral",
       format: ["esm"],

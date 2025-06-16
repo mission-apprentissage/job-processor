@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
-import { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import type { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import { CronDef, ILogger, JobDef, getLogger, getOptions } from "../setup.ts";
-import { workerId } from "./heartbeat.ts";
+import type { CronDef, ILogger, JobDef } from "../setup.ts";
+import { getLogger } from "../setup.ts";
+import { getOptions } from "../options.ts";
+import { workerId } from "./workerId.ts";
 import { notifySentryJobEnd, notifySentryJobStart } from "./sentry.ts";
 
 function getJobSimpleDef(job: IJobsSimple): JobDef | null {
@@ -58,8 +60,11 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        jobLogger.error({ error, job }, "job-processor: onJobExited failed");
-        Sentry.captureException(error, { extra: { job } });
+        jobLogger.error(
+          { error: errored, job },
+          "job-processor: onJobExited failed",
+        );
+        Sentry.captureException(errored, { extra: { job } });
       }
     }
   } else {
@@ -69,8 +74,11 @@ async function onRunnerExit(
       try {
         await onJobExited(updatedJob);
       } catch (errored) {
-        jobLogger.error({ error, job }, "job-processor: onJobExited failed");
-        Sentry.captureException(error, { extra: { job } });
+        jobLogger.error(
+          { error: errored, job },
+          "job-processor: onJobExited failed",
+        );
+        Sentry.captureException(errored, { extra: { job } });
       }
     }
   }
@@ -182,7 +190,7 @@ async function runner(
   return error ? 1 : 0;
 }
 
-export function executeJob(
+export async function executeJob(
   job: IJobsCronTask | IJobsSimple,
   signal: AbortSignal | null,
 ): Promise<number> {

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 
+import type { ProcessorStatusJson } from "../../common/model.ts";
 import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
-import { ProcessorStatusJson } from "../../common/model.ts";
 
 type JobRow = {
   _id: string;

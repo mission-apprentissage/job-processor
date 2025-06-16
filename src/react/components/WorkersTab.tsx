@@ -1,8 +1,8 @@
 import { Accordion } from "@codegouvfr/react-dsfr/Accordion.js";
 
-import { Table } from "./Table.tsx";
 import { useMemo } from "react";
-import { ProcessorStatusJson } from "../../common/model.ts";
+import type { ProcessorStatusJson } from "../../common/model.ts";
+import { Table } from "./Table.tsx";
 
 export function WorkersTab(
   props: Pick<ProcessorStatusJson, "workers" | "queue">,

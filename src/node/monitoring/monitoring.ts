@@ -1,16 +1,18 @@
-import {
+import type {
   CronStatus,
   IJob,
   IJobsCronTask,
   IJobsSimple,
-  isJobCron,
-  isJobCronTask,
-  isJobSimple,
-  isJobSimpleOrCronTask,
   IWorker,
   JobStatus,
   ProcessorStatus,
   WorkerStatus,
+} from "../../common/model.ts";
+import {
+  isJobCron,
+  isJobCronTask,
+  isJobSimple,
+  isJobSimpleOrCronTask,
 } from "../../common/model.ts";
 import { getJobCollection, getWorkerCollection } from "../data/actions.ts";
 
