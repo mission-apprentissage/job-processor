@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { initJobProcessor } from "../setup.ts";
+import { getOptions } from "../options.ts";
 import { getJobCollection } from "../data/actions.ts";
 import type { IJobsCron, IJobsCronTask } from "../index.ts";
 import {
@@ -14,6 +14,7 @@ let client: MongoClient;
 
 const now = new Date("2023-11-17T11:00:00.000Z");
 
+vi.mock("../options.ts");
 beforeAll(async () => {
   client = new MongoClient(
     `mongodb://127.0.0.1:27019/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
@@ -133,7 +134,7 @@ describe("cronsInit", () => {
       },
     };
 
-    await initJobProcessor(options);
+    vi.mocked(getOptions).mockReturnValue(options);
     await getJobCollection().insertMany([...crons, ...tasks]);
   });
 
@@ -210,7 +211,7 @@ describe("runCronsScheduler", () => {
       },
     };
 
-    await initJobProcessor(options);
+    vi.mocked(getOptions).mockReturnValue(options);
   });
 
   it("should run schedule crons properly", async () => {
@@ -320,7 +321,7 @@ describe("startCronScheduler", () => {
         crons: {},
       };
 
-      await initJobProcessor(options);
+      vi.mocked(getOptions).mockReturnValue(options);
 
       const abortController = new AbortController();
       await startCronScheduler(abortController.signal);
@@ -437,7 +438,7 @@ describe("startCronScheduler", () => {
         },
       };
 
-      await initJobProcessor(options);
+      vi.mocked(getOptions).mockReturnValue(options);
       await getJobCollection().insertMany(initialCrons);
     });
 

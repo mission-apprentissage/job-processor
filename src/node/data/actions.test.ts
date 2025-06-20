@@ -1,6 +1,5 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { initJobProcessor } from "../setup.ts";
 import type { IJobsCronTask, IJobsSimple, IWorker } from "../index.ts";
 import { workerId } from "../worker/workerId.ts";
 import { getOptions } from "../options.ts";
@@ -15,12 +14,13 @@ import {
 
 let client: MongoClient | null;
 
+vi.mock("../options.ts");
 beforeAll(async () => {
   client = new MongoClient(
     `mongodb://127.0.0.1:27019/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
   );
   await client.connect();
-  await initJobProcessor({
+  vi.mocked(getOptions).mockReturnValue({
     logger: {
       debug: vi.fn() as any,
       info: vi.fn() as any,
@@ -219,7 +219,7 @@ describe("pickNextJob", () => {
 
   describe("when worker tags are set", async () => {
     beforeEach(async () => {
-      await initJobProcessor({
+      vi.mocked(getOptions).mockReturnValue({
         ...getOptions(),
         workerTags: ["A"],
       });

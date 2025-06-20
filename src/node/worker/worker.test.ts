@@ -8,6 +8,7 @@ import { getOptions } from "../options.ts";
 import { workerId } from "./workerId.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 
+vi.mock("../options.ts");
 vi.mock("../setup.ts", async (importOriginal) => {
   const mod = await importOriginal();
   return {
@@ -19,7 +20,6 @@ vi.mock("../setup.ts", async (importOriginal) => {
       error: vi.fn(),
       child: vi.fn().mockReturnThis(),
     }),
-    getOptions: vi.fn(),
   };
 });
 
