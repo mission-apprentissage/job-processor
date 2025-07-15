@@ -3,8 +3,6 @@ import type { DataGridProps, GridValidRowModel } from "@mui/x-data-grid";
 import { DataGrid } from "@mui/x-data-grid";
 import { frFR } from "@mui/x-data-grid/locales";
 
-import type { FC, ReactNode, RefObject } from "react";
-
 export function Table<R extends GridValidRowModel>(props: DataGridProps<R>) {
   return (
     <Box my={2}>
@@ -16,14 +14,3 @@ export function Table<R extends GridValidRowModel>(props: DataGridProps<R>) {
     </Box>
   );
 }
-
-export const WrappeDataGridAction: FC<{
-  children: ReactNode | undefined;
-  touchRippleRef?: RefObject<unknown>;
-}> = async ({
-  children,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  touchRippleRef,
-}) => {
-  return children;
-};

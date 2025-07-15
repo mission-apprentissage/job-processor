@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import type { ProcessorStatusJson } from "../../common/model.ts";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
-import { Table, WrappeDataGridAction } from "./Table.tsx";
+import { Table } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 
 export function CronTab(
@@ -65,9 +65,7 @@ export function CronTab(
           headerName: "Voir",
           type: "actions",
           getActions: ({ row: { name } }) => [
-            <WrappeDataGridAction key="Voir">
-              <DsfrLink href={`${props.baseUrl}/cron/${name}`} />
-            </WrappeDataGridAction>,
+            <DsfrLink key="Voir" href={`${props.baseUrl}/cron/${name}`} />,
           ],
         },
       ]}
