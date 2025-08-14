@@ -1,11 +1,11 @@
 import type { Jsonify } from "type-fest";
 import { z } from "zod/v4-mini";
-import { zObjectId } from "zod-mongodb-schema";
+import { zObjectIdMini } from "zod-mongodb-schema";
 
 const zCronName = z.string();
 
 export const ZJobSimple = z.object({
-  _id: zObjectId,
+  _id: zObjectIdMini,
   name: z.string(),
   type: z.literal("simple"),
   status: z.enum(["pending", "running", "finished", "errored", "paused"]),
@@ -23,11 +23,11 @@ export const ZJobSimple = z.object({
   ended_at: z.nullish(z.date()),
   updated_at: z.date(),
   created_at: z.date(),
-  worker_id: z.nullable(zObjectId),
+  worker_id: z.nullable(zObjectIdMini),
 });
 
 export const ZJobCron = z.object({
-  _id: zObjectId,
+  _id: zObjectIdMini,
   name: zCronName,
   type: z.literal("cron"),
   status: z.enum(["active"]),
@@ -38,7 +38,7 @@ export const ZJobCron = z.object({
 });
 
 export const ZJobCronTask = z.object({
-  _id: zObjectId,
+  _id: zObjectIdMini,
   name: zCronName,
   type: z.literal("cron_task"),
   status: z.enum(["pending", "running", "finished", "errored", "paused"]),
@@ -54,7 +54,7 @@ export const ZJobCronTask = z.object({
       error: z.nullable(z.string()),
     }),
   ),
-  worker_id: z.nullable(zObjectId),
+  worker_id: z.nullable(zObjectIdMini),
   sentry_id: z.nullish(z.string()),
 });
 
@@ -65,7 +65,7 @@ export const ZJob = z.discriminatedUnion("type", [
 ]);
 
 export const ZWorker = z.object({
-  _id: zObjectId,
+  _id: zObjectIdMini,
   hostname: z.string(),
   lastSeen: z.date(),
   tags: z.nullable(z.array(z.string())),
