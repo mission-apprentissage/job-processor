@@ -1,5 +1,5 @@
 import { captureException } from "@sentry/node";
-import { IJobsSimple } from "../common/model.ts";
+import type { IJobsSimple } from "../common/model.ts";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
 import { getLogger } from "./setup.ts";
@@ -113,8 +113,7 @@ export async function startJobProcessor(
 }
 
 export * from "../common/index.ts";
-export { initJobProcessor } from "./setup.ts";
-export type * from "./setup.ts";
+export * from "./setup.ts";
 
 export {
   getProcessorHealthcheck,

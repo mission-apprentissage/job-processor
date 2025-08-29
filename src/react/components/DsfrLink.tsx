@@ -1,5 +1,6 @@
 import { fr } from "@codegouvfr/react-dsfr";
-import { Link, LinkProps } from "@mui/material";
+import type { LinkProps } from "@mui/material";
+import { Link } from "@mui/material";
 
 export function DsfrLink({ children, ...props }: LinkProps) {
   return (

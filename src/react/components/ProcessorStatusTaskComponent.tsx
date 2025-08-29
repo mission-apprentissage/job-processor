@@ -4,8 +4,8 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import type { Jsonify } from "type-fest";
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
 
-import { IJob, ProcessorStatusJson } from "../../common/model.ts";
 import { useMemo } from "react";
+import type { IJob, ProcessorStatusJson } from "../../common/model.ts";
 
 function formatDate(date: string | null | undefined) {
   if (!date) return " - ";
@@ -28,6 +28,8 @@ export function getTaskStatus(task: Jsonify<IJob> | null | undefined) {
       return "Erreur";
     case "paused":
       return "En pause";
+    case "active":
+      throw new Error("Active status is not expected for tasks");
     default:
       return "Inconnu";
   }

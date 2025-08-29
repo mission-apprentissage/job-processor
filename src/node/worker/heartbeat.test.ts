@@ -1,14 +1,14 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { initJobProcessor } from "../setup.ts";
+import { getWorkerCollection } from "../data/actions.ts";
+import type { IWorker } from "../index.ts";
 import {
   heartbeatEvent,
   startHeartbeat,
   startSyncHeartbeat,
-  workerId,
 } from "./heartbeat.ts";
-import { getWorkerCollection } from "../data/actions.ts";
-import { IWorker } from "../index.ts";
+import { workerId } from "./workerId.ts";
 
 let client: MongoClient | null;
 const startDate = new Date("2023-11-17T11:00:00.000Z");

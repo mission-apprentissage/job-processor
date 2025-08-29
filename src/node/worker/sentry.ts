@@ -1,7 +1,9 @@
 import { captureCheckIn } from "@sentry/node";
-import { IJob, isJobCronTask } from "../../common/model.ts";
+import type { IJob } from "../../common/model.ts";
+import { isJobCronTask } from "../../common/model.ts";
 import { getJobCollection } from "../data/actions.ts";
-import { getLogger, getOptions } from "../setup.ts";
+import { getLogger } from "../setup.ts";
+import { getOptions } from "../options.ts";
 
 export const notifySentryJobStart = async (job: IJob) => {
   if (!isJobCronTask(job)) {

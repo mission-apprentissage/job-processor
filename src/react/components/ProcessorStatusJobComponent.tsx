@@ -1,9 +1,9 @@
 import { Alert } from "@codegouvfr/react-dsfr/Alert.js";
-import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { fr } from "@codegouvfr/react-dsfr";
-import { Table, WrappeDataGridAction } from "./Table.tsx";
 import { useMemo } from "react";
+import type { ProcessorStatusJson } from "../../common/model.ts";
+import { Table } from "./Table.tsx";
 import { DsfrLink } from "./DsfrLink.tsx";
 import { getTaskStatus } from "./ProcessorStatusTaskComponent.tsx";
 
@@ -84,9 +84,10 @@ export function ProcessorStatusJobComponent(
           headerName: "Voir",
           type: "actions",
           getActions: ({ row: { _id } }) => [
-            <WrappeDataGridAction key="Voir">
-              <DsfrLink href={`${props.baseUrl}/job/${name}/${_id}`} />
-            </WrappeDataGridAction>,
+            <DsfrLink
+              key="Voir"
+              href={`${props.baseUrl}/job/${name}/${_id}`}
+            />,
           ],
         },
       ]}

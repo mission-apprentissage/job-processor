@@ -1,7 +1,7 @@
-import { ProcessorStatusJson } from "../../common/model.ts";
 import { Box, CircularProgress } from "@mui/material";
 import { Tabs } from "@codegouvfr/react-dsfr/Tabs.js";
 import { fr } from "@codegouvfr/react-dsfr";
+import type { ProcessorStatusJson } from "../../common/model.ts";
 import { WorkersTab } from "./WorkersTab.tsx";
 import { JobsTab } from "./JobsTab.tsx";
 import { CronTab } from "./CronTab.tsx";

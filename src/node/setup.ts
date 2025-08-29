@@ -1,6 +1,7 @@
-import { Db } from "mongodb";
-import { IJobsCronTask, IJobsSimple } from "../common/model.ts";
+import type { Db } from "mongodb";
+import type { IJobsCronTask, IJobsSimple } from "../common/model.ts";
 import { configureDb } from "./data/actions.ts";
+import { getOptions, setOptions } from "./options.ts";
 
 export interface ILogger {
   debug(msg: string): unknown;
@@ -37,16 +38,6 @@ export type JobProcessorOptions<T extends string = string> = {
   workerTags?: T[] | null;
 };
 
-let options: JobProcessorOptions | null = null;
-
-export function getOptions(): JobProcessorOptions {
-  if (!options) {
-    throw new Error("Job processor is not setup");
-  }
-
-  return options;
-}
-
 export function getLogger(): ILogger {
   return getOptions().logger;
 }
@@ -56,6 +47,6 @@ export async function initJobProcessor(opts: JobProcessorOptions) {
     throw new Error("workerTags should not be empty");
   }
 
-  options = opts;
+  setOptions(opts);
   await configureDb();
 }
