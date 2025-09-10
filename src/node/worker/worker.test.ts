@@ -1,14 +1,16 @@
+import type { MatchKeysAndValues } from "mongodb";
 import { ObjectId } from "mongodb";
-import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
+import type { IJob, IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import type { JobProcessorOptions } from "../setup.ts";
 import { getOptions } from "../options.ts";
+import { getJobKillSignal } from "../signal/signal.ts";
 import { workerId } from "./workerId.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 
 vi.mock("../options.ts");
+vi.mock("../signal/signal.ts");
 vi.mock("../setup.ts", async (importOriginal) => {
   const mod = await importOriginal();
   return {
@@ -72,53 +74,54 @@ describe("executeJob", () => {
         },
       };
       const now = new Date();
+      vi.advanceTimersByTime(3_000);
+      const in3sec = new Date();
 
       const job: IJobsSimple = {
         _id: new ObjectId(),
         name: "hello",
         type: "simple",
-        status: "pending",
+        status: "running",
         sync: false,
         payload: { name: "Moroine" },
         output: null,
         scheduled_for: now,
-        started_at: null,
+        started_at: in3sec,
         ended_at: null,
         updated_at: now,
         created_at: now,
-        worker_id: null,
+        worker_id: workerId,
       };
 
       const jobUpdates: Partial<IJobsSimple>[] = [];
 
-      vi.advanceTimersByTime(3_000);
-
-      (getOptions as Mock).mockReturnValue(options);
-      (updateJob as Mock).mockImplementation(
-        (id: ObjectId, data: Partial<IJobsSimple>) => {
+      vi.mocked(getOptions).mockReturnValue(options);
+      vi.mocked(updateJob).mockImplementation(
+        async (id: ObjectId, data: MatchKeysAndValues<IJob>) => {
           expect(id).toBe(job._id);
-          jobUpdates.push(data);
+          jobUpdates.push(data as IJobsSimple);
         },
       );
-      (getSimpleJob as Mock).mockImplementation((id: ObjectId) => {
-        expect(id).toBe(job._id);
+      vi.mocked(getSimpleJob).mockImplementation(
+        async (id: ObjectId): Promise<IJobsSimple> => {
+          expect(id).toBe(job._id);
 
-        return jobUpdates.reduce((acc, update) => {
-          return { ...acc, ...update };
-        }, job);
-      });
+          return jobUpdates.reduce<IJobsSimple>((acc, update) => {
+            return { ...acc, ...update };
+          }, job);
+        },
+      );
 
-      const abortController = new AbortController();
+      const processorAbortController = new AbortController();
+      const jobAbortController = new AbortController();
+      vi.mocked(getJobKillSignal).mockReturnValue(jobAbortController.signal);
 
       await expect
-        .soft(executeJob(job, abortController.signal))
+        .soft(executeJob(job, processorAbortController.signal))
         .resolves.toBe(0);
+      expect(getJobKillSignal).toHaveBeenCalledBefore(vi.mocked(updateJob));
+      expect(getJobKillSignal).toHaveBeenCalledWith(job._id);
       expect(jobUpdates).toEqual([
-        {
-          status: "running",
-          started_at: expect.anything(),
-          worker_id: workerId,
-        },
         {
           status: "finished",
           output: {
@@ -130,23 +133,16 @@ describe("executeJob", () => {
           worker_id: null,
         },
       ]);
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(
-        now.getTime() + 3000,
-      );
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeLessThanOrEqual(
-        now.getTime() + 3100,
-      );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
         now.getTime() + 5000,
       );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeLessThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeLessThanOrEqual(
         now.getTime() + 5100,
       );
       expect(onJobExited).toHaveBeenCalledOnce();
       expect(onJobExited).toHaveBeenCalledWith({
         ...job,
         ...jobUpdates[0],
-        ...jobUpdates[1],
       });
     });
 
@@ -168,51 +164,54 @@ describe("executeJob", () => {
         },
       };
       const now = new Date();
+      vi.advanceTimersByTime(3_000);
+      const in3sec = new Date();
 
       const job: IJobsSimple = {
         _id: new ObjectId(),
         name: "hello",
         type: "simple",
-        status: "pending",
+        status: "running",
         sync: false,
         payload: { name: "Moroine" },
         output: null,
         scheduled_for: now,
-        started_at: null,
+        started_at: in3sec,
         ended_at: null,
         updated_at: now,
         created_at: now,
-        worker_id: null,
+        worker_id: workerId,
       };
 
       const jobUpdates: Partial<IJobsSimple>[] = [];
 
-      vi.advanceTimersByTime(3_000);
-
-      (getOptions as Mock).mockReturnValue(options);
-      (updateJob as Mock).mockImplementation(
-        (id: ObjectId, data: Partial<IJobsSimple>) => {
+      vi.mocked(getOptions).mockReturnValue(options);
+      vi.mocked(updateJob).mockImplementation(
+        async (id: ObjectId, data: MatchKeysAndValues<IJob>) => {
           expect(id).toBe(job._id);
-          jobUpdates.push(data);
+          jobUpdates.push(data as IJobsSimple);
         },
       );
-      (getSimpleJob as Mock).mockImplementation((id: ObjectId) => {
-        expect(id).toBe(job._id);
+      vi.mocked(getSimpleJob).mockImplementation(
+        async (id: ObjectId): Promise<IJobsSimple> => {
+          expect(id).toBe(job._id);
 
-        return jobUpdates.reduce((acc, update) => {
-          return { ...acc, ...update };
-        }, job);
-      });
-
-      const abortController = new AbortController();
-
-      expect.soft(await executeJob(job, abortController.signal)).toBe(1);
-      expect(jobUpdates).toEqual([
-        {
-          status: "running",
-          started_at: expect.anything(),
-          worker_id: workerId,
+          return jobUpdates.reduce<IJobsSimple>((acc, update) => {
+            return { ...acc, ...update };
+          }, job);
         },
+      );
+
+      const processorAbortController = new AbortController();
+      const jobAbortController = new AbortController();
+      vi.mocked(getJobKillSignal).mockReturnValue(jobAbortController.signal);
+
+      expect
+        .soft(await executeJob(job, processorAbortController.signal))
+        .toBe(1);
+      expect(getJobKillSignal).toHaveBeenCalledBefore(vi.mocked(updateJob));
+      expect(getJobKillSignal).toHaveBeenCalledWith(job._id);
+      expect(jobUpdates).toEqual([
         {
           status: "errored",
           output: {
@@ -224,23 +223,110 @@ describe("executeJob", () => {
           worker_id: null,
         },
       ]);
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(
-        now.getTime() + 3000,
-      );
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeLessThanOrEqual(
-        now.getTime() + 3100,
-      );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
         now.getTime() + 5000,
       );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeLessThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeLessThanOrEqual(
         now.getTime() + 5100,
       );
       expect(onJobExited).toHaveBeenCalledOnce();
       expect(onJobExited).toHaveBeenCalledWith({
         ...job,
         ...jobUpdates[0],
-        ...jobUpdates[1],
+      });
+    });
+
+    it("should handle job kill signal", async () => {
+      const onJobExited = vi.fn();
+      const options: JobProcessorOptions = {
+        db: vi.fn() as any,
+        logger: vi.fn() as any,
+        crons: {},
+        jobs: {
+          hello: {
+            handler: async (_j, signal) => {
+              return new Promise((_resolve, reject) => {
+                signal.addEventListener("abort", async () => {
+                  // Simluate abort handling after a small delay
+                  await new Promise((r) => setTimeout(r, 1_000));
+                  reject(signal.reason);
+                });
+              });
+            },
+            onJobExited,
+          },
+        },
+      };
+      const now = new Date();
+      vi.advanceTimersByTime(3_000);
+      const in3sec = new Date();
+
+      const job: IJobsSimple = {
+        _id: new ObjectId(),
+        name: "hello",
+        type: "simple",
+        status: "running",
+        sync: false,
+        payload: { name: "Moroine" },
+        output: null,
+        scheduled_for: now,
+        started_at: in3sec,
+        ended_at: null,
+        updated_at: now,
+        created_at: now,
+        worker_id: workerId,
+      };
+
+      const jobUpdates: Partial<IJobsSimple>[] = [];
+
+      vi.mocked(getOptions).mockReturnValue(options);
+      vi.mocked(updateJob).mockImplementation(
+        async (id: ObjectId, data: MatchKeysAndValues<IJob>) => {
+          expect(id).toBe(job._id);
+          jobUpdates.push(data as IJobsSimple);
+        },
+      );
+      vi.mocked(getSimpleJob).mockImplementation(
+        async (id: ObjectId): Promise<IJobsSimple> => {
+          expect(id).toBe(job._id);
+
+          return jobUpdates.reduce<IJobsSimple>((acc, update) => {
+            return { ...acc, ...update };
+          }, job);
+        },
+      );
+
+      const processorAbortController = new AbortController();
+      const jobAbortController = new AbortController();
+      vi.mocked(getJobKillSignal).mockReturnValue(jobAbortController.signal);
+
+      const executePromise = executeJob(job, processorAbortController.signal);
+      vi.waitFor(() => {
+        expect(vi.mocked(getJobKillSignal)).toHaveBeenCalledWith(job._id);
+      });
+      vi.advanceTimersByTime(500);
+      jobAbortController.abort(new Error("Job killed"));
+
+      await expect.soft(executePromise).resolves.toBe(2);
+
+      expect(getJobKillSignal).toHaveBeenCalledBefore(vi.mocked(updateJob));
+      expect(getJobKillSignal).toHaveBeenCalledWith(job._id);
+      expect(jobUpdates).toEqual([
+        {
+          status: "killed",
+          output: {
+            duration: "550ms",
+            result: null,
+            error: "Killed",
+          },
+          ended_at: expect.anything(),
+          worker_id: null,
+        },
+      ]);
+      expect(onJobExited).toHaveBeenCalledOnce();
+      expect(onJobExited).toHaveBeenCalledWith({
+        ...job,
+        ...jobUpdates[0],
       });
     });
   });
@@ -264,51 +350,53 @@ describe("executeJob", () => {
         },
         jobs: {},
       };
+
       const now = new Date();
+      vi.advanceTimersByTime(3_000);
+      const in3sec = new Date();
 
       const job: IJobsCronTask = {
         _id: new ObjectId(),
         name: "hello",
         type: "cron_task",
-        status: "pending",
+        status: "running",
         scheduled_for: now,
-        started_at: null,
+        started_at: in3sec,
         ended_at: null,
         updated_at: now,
         created_at: now,
-        worker_id: null,
+        worker_id: workerId,
       };
 
       const jobUpdates: Partial<IJobsCronTask>[] = [];
 
-      vi.advanceTimersByTime(3_000);
-
-      (getOptions as Mock).mockReturnValue(options);
-      (updateJob as Mock).mockImplementation(
-        (id: ObjectId, data: Partial<IJobsCronTask>) => {
+      vi.mocked(getOptions).mockReturnValue(options);
+      vi.mocked(updateJob).mockImplementation(
+        async (id: ObjectId, data: MatchKeysAndValues<IJob>) => {
           expect(id).toBe(job._id);
-          jobUpdates.push(data);
+          jobUpdates.push(data as IJobsCronTask);
         },
       );
-      (getCronTaskJob as Mock).mockImplementation((id: ObjectId) => {
-        expect(id).toBe(job._id);
+      vi.mocked(getCronTaskJob).mockImplementation(
+        async (id: ObjectId): Promise<IJobsCronTask> => {
+          expect(id).toBe(job._id);
 
-        return jobUpdates.reduce((acc, update) => {
-          return { ...acc, ...update };
-        }, job);
-      });
+          return jobUpdates.reduce<IJobsCronTask>((acc, update) => {
+            return { ...acc, ...update };
+          }, job);
+        },
+      );
 
-      const abortController = new AbortController();
+      const processorAbortController = new AbortController();
+      const jobAbortController = new AbortController();
+      vi.mocked(getJobKillSignal).mockReturnValue(jobAbortController.signal);
 
       await expect
-        .soft(executeJob(job, abortController.signal))
+        .soft(executeJob(job, processorAbortController.signal))
         .resolves.toBe(0);
+      expect(getJobKillSignal).toHaveBeenCalledBefore(vi.mocked(updateJob));
+      expect(getJobKillSignal).toHaveBeenCalledWith(job._id);
       expect(jobUpdates).toEqual([
-        {
-          status: "running",
-          started_at: expect.anything(),
-          worker_id: workerId,
-        },
         {
           status: "finished",
           output: {
@@ -320,23 +408,16 @@ describe("executeJob", () => {
           worker_id: null,
         },
       ]);
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(
-        now.getTime() + 3000,
-      );
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeLessThanOrEqual(
-        now.getTime() + 3100,
-      );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
         now.getTime() + 5000,
       );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeLessThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeLessThanOrEqual(
         now.getTime() + 5100,
       );
       expect(onJobExited).toHaveBeenCalledOnce();
       expect(onJobExited).toHaveBeenCalledWith({
         ...job,
         ...jobUpdates[0],
-        ...jobUpdates[1],
       });
     });
 
@@ -358,49 +439,51 @@ describe("executeJob", () => {
         },
         jobs: {},
       };
+
       const now = new Date();
+      vi.advanceTimersByTime(3_000);
+      const in3sec = new Date();
 
       const job: IJobsCronTask = {
         _id: new ObjectId(),
         name: "hello",
         type: "cron_task",
-        status: "pending",
+        status: "running",
         scheduled_for: now,
-        started_at: null,
+        started_at: in3sec,
         ended_at: null,
         updated_at: now,
         created_at: now,
-        worker_id: null,
+        worker_id: workerId,
       };
 
       const jobUpdates: Partial<IJobsCronTask>[] = [];
 
-      vi.advanceTimersByTime(3_000);
-
-      (getOptions as Mock).mockReturnValue(options);
-      (updateJob as Mock).mockImplementation(
-        (id: ObjectId, data: Partial<IJobsCronTask>) => {
+      vi.mocked(getOptions).mockReturnValue(options);
+      vi.mocked(updateJob).mockImplementation(
+        async (id: ObjectId, data: MatchKeysAndValues<IJob>) => {
           expect(id).toBe(job._id);
-          jobUpdates.push(data);
+          jobUpdates.push(data as IJobsCronTask);
         },
       );
-      (getCronTaskJob as Mock).mockImplementation((id: ObjectId) => {
+      vi.mocked(getCronTaskJob).mockImplementation(async (id: ObjectId) => {
         expect(id).toBe(job._id);
 
-        return jobUpdates.reduce((acc, update) => {
+        return jobUpdates.reduce<IJobsCronTask>((acc, update) => {
           return { ...acc, ...update };
         }, job);
       });
 
-      const abortController = new AbortController();
+      const processorAbortController = new AbortController();
+      const jobAbortController = new AbortController();
+      vi.mocked(getJobKillSignal).mockReturnValue(jobAbortController.signal);
 
-      expect.soft(await executeJob(job, abortController.signal)).toBe(1);
+      expect
+        .soft(await executeJob(job, processorAbortController.signal))
+        .toBe(1);
+      expect(getJobKillSignal).toHaveBeenCalledBefore(vi.mocked(updateJob));
+      expect(getJobKillSignal).toHaveBeenCalledWith(job._id);
       expect(jobUpdates).toEqual([
-        {
-          status: "running",
-          started_at: expect.anything(),
-          worker_id: workerId,
-        },
         {
           status: "errored",
           output: {
@@ -412,23 +495,16 @@ describe("executeJob", () => {
           worker_id: null,
         },
       ]);
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeGreaterThanOrEqual(
-        now.getTime() + 3000,
-      );
-      expect(jobUpdates[0]?.started_at?.getTime()).toBeLessThanOrEqual(
-        now.getTime() + 3100,
-      );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeGreaterThanOrEqual(
         now.getTime() + 5000,
       );
-      expect(jobUpdates[1]?.ended_at?.getTime()).toBeLessThanOrEqual(
+      expect(jobUpdates[0]?.ended_at?.getTime()).toBeLessThanOrEqual(
         now.getTime() + 5100,
       );
       expect(onJobExited).toHaveBeenCalledOnce();
       expect(onJobExited).toHaveBeenCalledWith({
         ...job,
         ...jobUpdates[0],
-        ...jobUpdates[1],
       });
     });
   });
@@ -459,7 +535,7 @@ describe("reportJobCrash", () => {
             },
           },
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 
@@ -505,7 +581,7 @@ describe("reportJobCrash", () => {
             },
           },
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 
@@ -551,7 +627,7 @@ describe("reportJobCrash", () => {
             },
           },
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 
@@ -600,7 +676,7 @@ describe("reportJobCrash", () => {
           },
           jobs: {},
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 
@@ -645,7 +721,7 @@ describe("reportJobCrash", () => {
           },
           jobs: {},
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 
@@ -690,7 +766,7 @@ describe("reportJobCrash", () => {
           },
           jobs: {},
         };
-        (getOptions as Mock).mockReturnValue(options);
+        vi.mocked(getOptions).mockReturnValue(options);
 
         const now = new Date();
 

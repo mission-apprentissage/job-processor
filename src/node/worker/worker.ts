@@ -5,7 +5,7 @@ import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
 import type { CronDef, ILogger, JobDef } from "../setup.ts";
 import { getLogger } from "../setup.ts";
 import { getOptions } from "../options.ts";
-import { workerId } from "./workerId.ts";
+import { clearJobKillSignal, getJobKillSignal } from "../signal/signal.ts";
 import { notifySentryJobEnd, notifySentryJobStart } from "./sentry.ts";
 
 function getJobSimpleDef(job: IJobsSimple): JobDef | null {
@@ -34,6 +34,7 @@ function stringifyError<T>(error: T): string | T {
 async function onRunnerExit(
   job: IJobsCronTask | IJobsSimple,
   error: string | null,
+  status: "finished" | "errored" | "killed" | "paused",
   result: unknown,
   jobLogger: ILogger,
 ) {
@@ -44,14 +45,18 @@ async function onRunnerExit(
     formatDuration(intervalToDuration({ start: startDate, end: endDate })) ||
     `${ts}ms`;
 
-  const status = error ? "errored" : "finished";
   await updateJob(job._id, {
-    status: error ? "errored" : "finished",
-    output: { duration, result, error },
-    ended_at: endDate,
+    status,
+    output: status === "paused" ? null : { duration, result, error },
+    ended_at: status === "paused" ? null : endDate,
     worker_id: null,
   });
   await notifySentryJobEnd(job, !error);
+
+  if (status === "paused") {
+    // Job was paused, we don't call onJobExited
+    return { status, duration };
+  }
 
   if (job.type === "simple") {
     const onJobExited = getJobSimpleDef(job)?.onJobExited ?? null;
@@ -101,20 +106,45 @@ function getJobAbortedCb(
           : getCronTaskDef(job)?.resumable;
 
       if (resumable === true) {
-        await updateJob(job._id, { status: "paused", worker_id: null });
+        await onRunnerExit(job, "Interrupted", "paused", null, jobLogger);
       } else {
-        const error = new Error("[job-processor] Job aborted");
+        const error = new Error("[job-processor] Job processor aborted");
         Sentry.captureException(error, {
           extra: { job },
         });
-        getLogger().error({ error, job }, "job-processor: job aborted");
-        await onRunnerExit(job, "Interrupted", null, jobLogger);
+        getLogger().error(
+          { error, job },
+          "job-processor: job processor aborted",
+        );
+        await onRunnerExit(job, "Interrupted", "errored", null, jobLogger);
       }
     } catch (err) {
       Sentry.captureException(err, { extra: { job } });
       getLogger().error(
         { error: err, job },
-        "job-processor: job abort unexpected error",
+        "job-processor: job processor abort unexpected error",
+      );
+    }
+  };
+}
+
+function getJobKillCb(
+  job: IJobsSimple | IJobsCronTask,
+  jobLogger: ILogger,
+): () => Promise<void> {
+  return async () => {
+    try {
+      const error = new Error("[job-processor] Job killed");
+      Sentry.captureException(error, {
+        extra: { job },
+      });
+      getLogger().error({ error, job }, "job-processor: job killed");
+      await onRunnerExit(job, "Killed", "killed", null, jobLogger);
+    } catch (err) {
+      Sentry.captureException(err, { extra: { job } });
+      jobLogger.error(
+        { error: err, job },
+        "job-processor: job kill unexpected error",
       );
     }
   };
@@ -122,7 +152,7 @@ function getJobAbortedCb(
 
 async function runner(
   job: IJobsCronTask | IJobsSimple,
-  signal: AbortSignal,
+  processSignal: AbortSignal,
 ): Promise<number> {
   const jobLogger = getLogger().child({
     _id: job._id,
@@ -132,22 +162,34 @@ async function runner(
   });
 
   jobLogger.info("job started");
-  job.started_at = job.started_at ?? new Date();
-  job.status = "running";
-  job.worker_id = workerId;
+  const jobKillSignal = getJobKillSignal(job._id);
+
+  const onKill = getJobKillCb(job, jobLogger);
+  if (jobKillSignal.aborted) {
+    await onKill();
+    return 2;
+  }
+
+  jobKillSignal.addEventListener("abort", onKill, { once: true });
 
   const onAbort = getJobAbortedCb(job, jobLogger);
-  signal.addEventListener("abort", onAbort, { once: true });
+  if (processSignal.aborted) {
+    await onAbort();
+    return 2;
+  }
 
-  await updateJob(job._id, {
-    status: job.status,
-    started_at: job.started_at,
-    worker_id: job.worker_id,
-  });
+  processSignal.addEventListener("abort", onAbort, { once: true });
+
   let error: string | null = null;
   let result: unknown = undefined;
 
+  const signal = AbortSignal.any([processSignal, jobKillSignal]);
+
   try {
+    if (signal.aborted) {
+      throw signal.reason;
+    }
+
     if (job.type === "simple") {
       const jobDef = getJobSimpleDef(job);
       if (!jobDef) {
@@ -164,7 +206,7 @@ async function runner(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     if (err === signal.reason) {
-      // No need to update, it's already handled by onAbort
+      // No need to update, it's already handled by onAbort / onKill
       return 2;
     }
 
@@ -174,13 +216,17 @@ async function runner(
       "job error",
     );
     error = stringifyError(err) ?? "job-erorr: unknown Error";
+  } finally {
+    clearJobKillSignal(job._id);
   }
 
-  signal.removeEventListener("abort", onAbort);
+  jobKillSignal.removeEventListener("abort", onKill);
+  processSignal.removeEventListener("abort", onAbort);
 
   const { status, duration } = await onRunnerExit(
     job,
     error,
+    error ? "errored" : "finished",
     result,
     jobLogger,
   );
