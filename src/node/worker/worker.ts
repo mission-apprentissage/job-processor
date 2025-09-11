@@ -45,6 +45,16 @@ async function onRunnerExit(
     formatDuration(intervalToDuration({ start: startDate, end: endDate })) ||
     `${ts}ms`;
 
+  const currentJob =
+    job.type === "simple"
+      ? await getSimpleJob(job._id)
+      : await getCronTaskJob(job._id);
+
+  if (currentJob?.status === "killed") {
+    // Job is already killed, we don't override it
+    return { status: "killed", duration };
+  }
+
   await updateJob(job._id, {
     status,
     output: status === "paused" ? null : { duration, result, error },
