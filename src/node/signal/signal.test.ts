@@ -361,11 +361,14 @@ describe.each([
         sync: false,
       });
 
-      await killJob(jobId);
-      const signal = await getSignalCollection().findOne({
-        job_id: jobId,
-        worker_id: otherWorkerId,
+      const killJobPromise = killJob(jobId);
+      const signal = vi.waitUntil(async () => {
+        return getSignalCollection().findOne({
+          job_id: jobId,
+          worker_id: otherWorkerId,
+        });
       });
+      await expect.soft(killJobPromise).resolves.toBeUndefined();
       expect.soft(signal).toBeDefined();
     });
 

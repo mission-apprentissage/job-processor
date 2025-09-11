@@ -5,6 +5,10 @@ import type { ISignal } from "../../common/model.ts";
 import { workerId } from "../worker/workerId.ts";
 import { getLogger } from "../setup.ts";
 
+function getPollIntervalMs(): number {
+  return process.env["TEST"] ? 50 : 60_000;
+}
+
 export async function processSignal(signal: ISignal): Promise<void> {
   switch (signal.type) {
     case "kill":
@@ -37,18 +41,15 @@ export async function listenSignalCollection(
   const isSupported = await isChangeStreamSupported();
 
   if (!isSupported) {
-    const intervalId: NodeJS.Timeout = setInterval(
-      async () => {
-        const signals = await getSignalCollection()
-          .find({ worker_id: workerId, ack: false })
-          .toArray();
+    const intervalId: NodeJS.Timeout = setInterval(async () => {
+      const signals = await getSignalCollection()
+        .find({ worker_id: workerId, ack: false })
+        .toArray();
 
-        for (const signal of signals) {
-          await processSignal(signal);
-        }
-      },
-      process.env["TEST"] ? 50 : 60_000,
-    ).unref();
+      for (const signal of signals) {
+        await processSignal(signal);
+      }
+    }, getPollIntervalMs()).unref();
 
     signal.addEventListener("abort", () => {
       clearInterval(intervalId);
@@ -158,6 +159,26 @@ export async function killJob(id: ObjectId): Promise<void> {
       created_at: new Date(),
       ack: false,
     });
+    // Wait for the job to be killed, up to 3 times the POLL_INTERVAL_MS
+    await new Promise((resolve) => {
+      let timeoutId: NodeJS.Timeout | null = null;
+      const intervalId = setInterval(async () => {
+        const updatedJob = await getJobCollection().findOne({ _id: id });
+        if (updatedJob?.status === "killed") {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          clearInterval(intervalId);
+          resolve(null);
+        }
+      }, getPollIntervalMs() / 100).unref();
+
+      timeoutId = setTimeout(() => {
+        clearInterval(intervalId);
+        resolve(null);
+      }, getPollIntervalMs() * 3).unref();
+    });
+
     return;
   }
 
