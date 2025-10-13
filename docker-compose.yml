@@ -10,3 +10,9 @@ services:
       timeout: 5s
       retries: 12
       start_period: 0s
+  mongodb-replicaset:
+    build: ./mongo/
+    hostname: mongo
+    restart: unless-stopped
+    ports:
+      - "27020:27017"

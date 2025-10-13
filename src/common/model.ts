@@ -8,7 +8,14 @@ export const ZJobSimple = z.object({
   _id: zObjectIdMini,
   name: z.string(),
   type: z.literal("simple"),
-  status: z.enum(["pending", "running", "finished", "errored", "paused"]),
+  status: z.enum([
+    "pending",
+    "running",
+    "finished",
+    "errored",
+    "paused",
+    "killed",
+  ]),
   sync: z.boolean(),
   payload: z.nullish(z.record(z.string(), z.unknown())),
   output: z.nullish(
@@ -41,7 +48,14 @@ export const ZJobCronTask = z.object({
   _id: zObjectIdMini,
   name: zCronName,
   type: z.literal("cron_task"),
-  status: z.enum(["pending", "running", "finished", "errored", "paused"]),
+  status: z.enum([
+    "pending",
+    "running",
+    "finished",
+    "errored",
+    "paused",
+    "killed",
+  ]),
   scheduled_for: z.date(),
   started_at: z.nullish(z.date()),
   ended_at: z.nullish(z.date()),
@@ -132,3 +146,14 @@ export type JobStatus = z.output<typeof zJobStatus>;
 export type ProcessorStatus = z.output<typeof zProcessorStatus>;
 
 export type ProcessorStatusJson = Jsonify<ProcessorStatus>;
+
+export const zSignal = z.object({
+  _id: zObjectIdMini,
+  type: z.enum(["kill"]),
+  job_id: zObjectIdMini,
+  worker_id: zObjectIdMini,
+  created_at: z.date(),
+  ack: z.boolean(),
+});
+
+export type ISignal = z.output<typeof zSignal>;

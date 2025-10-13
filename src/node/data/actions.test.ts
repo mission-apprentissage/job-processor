@@ -17,7 +17,7 @@ let client: MongoClient | null;
 vi.mock("../options.ts");
 beforeAll(async () => {
   client = new MongoClient(
-    `mongodb://127.0.0.1:27019/${process.env["VITEST_POOL_ID"]}_${process.env["VITEST_WORKER_ID"]}`,
+    `mongodb://127.0.0.1:27019/${process.env["VITEST_POOL_ID"]}`,
   );
   await client.connect();
   vi.mocked(getOptions).mockReturnValue({

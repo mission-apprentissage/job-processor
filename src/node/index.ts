@@ -6,6 +6,7 @@ import { getLogger } from "./setup.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
 import { runJobProcessor } from "./worker/processor.ts";
 import { executeJob } from "./worker/worker.ts";
+import { listenSignalCollection } from "./signal/signal.ts";
 
 type ScheduleJobParams = Pick<IJobsSimple, "name" | "payload"> &
   Partial<Pick<IJobsSimple, "scheduled_for">>;
@@ -92,6 +93,15 @@ export async function startJobProcessor(
       return;
     }
 
+    getLogger().info("job-processor: will start listening to signals");
+    await listenSignalCollection(signal);
+    if (signal.aborted) {
+      getLogger().info(
+        "job-processor: abort already request - cancelling start",
+      );
+      return;
+    }
+
     getLogger().info("job-processor: will start processor");
     await runJobProcessor(signal);
   } catch (error) {
@@ -114,6 +124,7 @@ export async function startJobProcessor(
 
 export * from "../common/index.ts";
 export * from "./setup.ts";
+export { killJob } from "./signal/signal.ts";
 
 export {
   getProcessorHealthcheck,

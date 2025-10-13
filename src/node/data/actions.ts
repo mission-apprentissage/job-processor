@@ -13,6 +13,7 @@ import type {
   IJobsCron,
   IJobsCronTask,
   IJobsSimple,
+  ISignal,
   IWorker,
 } from "../../common/model.ts";
 import { ZJob } from "../../common/model.ts";
@@ -21,6 +22,7 @@ import { workerId } from "../worker/workerId.ts";
 
 const jobCollectionName = "job_processor.jobs";
 const workerCollectionName = "job_processor.workers";
+const signalCollectionName = "job_processor.signals";
 
 function getDatabase(): Db {
   return getOptions().db;
@@ -32,6 +34,10 @@ export function getJobCollection(): Collection<IJob> {
 
 export function getWorkerCollection(): Collection<IWorker> {
   return getDatabase().collection(workerCollectionName);
+}
+
+export function getSignalCollection(): Collection<ISignal> {
+  return getDatabase().collection(signalCollectionName);
 }
 
 async function executeMigrations() {
@@ -63,6 +69,14 @@ async function createIndexes() {
     ),
     getWorkerCollection().createIndexes(
       [{ key: { lastSeen: 1 }, expireAfterSeconds: 300 }],
+      { background: true },
+    ),
+    getSignalCollection().createIndexes(
+      [{ key: { created_at: 1 }, expireAfterSeconds: 3_600 }],
+      { background: true },
+    ),
+    getSignalCollection().createIndexes(
+      [{ key: { worker_id: 1, ack: 1, created_at: 1 } }],
       { background: true },
     ),
   ]);
@@ -134,7 +148,8 @@ export const createJobSimple = async ({
     created_at: now,
     scheduled_for,
     sync,
-    worker_id: null,
+    worker_id: sync ? workerId : null,
+    started_at: sync ? now : null,
   };
   await getJobCollection().insertOne(job);
   return job;
@@ -237,8 +252,8 @@ export const findJobs = async <T extends IJob>(
 export const updateJob = async (
   _id: ObjectId,
   data: MatchKeysAndValues<IJob>,
-) => {
-  return getJobCollection().updateOne(
+): Promise<void> => {
+  await getJobCollection().updateOne(
     { _id },
     { $set: { ...data, updated_at: new Date() } },
   );
