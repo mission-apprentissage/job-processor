@@ -15,6 +15,7 @@ export const ZJobSimple = z.object({
     "errored",
     "paused",
     "killed",
+    "skipped",
   ]),
   sync: z.boolean(),
   payload: z.nullish(z.record(z.string(), z.unknown())),
@@ -23,6 +24,13 @@ export const ZJobSimple = z.object({
       duration: z.string(),
       result: z.unknown(),
       error: z.nullable(z.string()),
+      skip_metadata: z.nullish(
+        z.object({
+          reason: z.enum(["noConcurrent_conflict", "other"]),
+          conflicting_job_id: z.nullable(zObjectIdMini),
+          skipped_at: z.date(),
+        }),
+      ),
     }),
   ),
   scheduled_for: z.date(),
@@ -31,6 +39,7 @@ export const ZJobSimple = z.object({
   updated_at: z.date(),
   created_at: z.date(),
   worker_id: z.nullable(zObjectIdMini),
+  noConcurrent: z.nullish(z.boolean()),
 });
 
 export const ZJobCron = z.object({
@@ -55,6 +64,7 @@ export const ZJobCronTask = z.object({
     "errored",
     "paused",
     "killed",
+    "skipped",
   ]),
   scheduled_for: z.date(),
   started_at: z.nullish(z.date()),
@@ -66,10 +76,18 @@ export const ZJobCronTask = z.object({
       duration: z.string(),
       result: z.unknown(),
       error: z.nullable(z.string()),
+      skip_metadata: z.nullish(
+        z.object({
+          reason: z.enum(["noConcurrent_conflict", "other"]),
+          conflicting_job_id: z.nullable(zObjectIdMini),
+          skipped_at: z.date(),
+        }),
+      ),
     }),
   ),
   worker_id: z.nullable(zObjectIdMini),
   sentry_id: z.nullish(z.string()),
+  noConcurrent: z.nullish(z.boolean()),
 });
 
 export const ZJob = z.discriminatedUnion("type", [

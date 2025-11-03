@@ -1,12 +1,14 @@
 import type { Db } from "mongodb";
 import type { IJobsCronTask, IJobsSimple } from "../common/model.ts";
 import { configureDb } from "./data/actions.ts";
-import { getOptions, setOptions } from "./options.ts";
+import { setOptions } from "./options.ts";
 
 export interface ILogger {
   debug(msg: string): unknown;
   info(data: Record<string, unknown>, msg: string): unknown;
   info(msg: string): unknown;
+  warn(data: Record<string, unknown>, msg: string): unknown;
+  warn(msg: string): unknown;
   child(data: Record<string, unknown>): ILogger;
   error(data: Record<string, unknown>, msg: string): unknown;
 }
@@ -17,6 +19,8 @@ export type JobDef<T extends string = string> = {
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
   resumable?: boolean;
   tag?: T | null;
+  // Prevent concurrent execution: only one pending/running job with same name allowed
+  noConcurrent?: boolean;
 };
 
 export type CronDef<T extends string = string> = {
@@ -28,6 +32,8 @@ export type CronDef<T extends string = string> = {
   maxRuntimeInMinutes?: number;
   checkinMargin?: number;
   tag?: T | null;
+  // Prevent concurrent execution: only one pending/running/paused cron_task with same name allowed.
+  noConcurrent?: boolean;
 };
 
 export type JobProcessorOptions<T extends string = string> = {
@@ -38,9 +44,7 @@ export type JobProcessorOptions<T extends string = string> = {
   workerTags?: T[] | null;
 };
 
-export function getLogger(): ILogger {
-  return getOptions().logger;
-}
+export { getLogger } from "./logger.ts";
 
 export async function initJobProcessor(opts: JobProcessorOptions) {
   if (opts.workerTags != null && opts.workerTags.length === 0) {

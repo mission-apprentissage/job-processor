@@ -3,7 +3,7 @@ import { CronExpressionParser } from "cron-parser";
 import { ObjectId } from "mongodb";
 import { captureException } from "@sentry/node";
 import type { CronDef } from "../setup.ts";
-import { getLogger } from "../setup.ts";
+import { getLogger } from "../logger.ts";
 import {
   createJobCronTask,
   findJobs,

@@ -113,6 +113,7 @@ describe("cronsInit", () => {
       logger: {
         debug: vi.fn() as any,
         info: vi.fn() as any,
+        warn: vi.fn() as any,
         error: vi.fn() as any,
         child: vi.fn() as any,
       },
@@ -198,6 +199,7 @@ describe("runCronsScheduler", () => {
       logger: {
         debug: vi.fn() as any,
         info: vi.fn() as any,
+        warn: vi.fn() as any,
         error: vi.fn() as any,
         child: vi.fn() as any,
       },
@@ -254,6 +256,7 @@ describe("runCronsScheduler", () => {
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        noConcurrent: false,
         scheduled_for: nextScheduledFor1,
         started_at: null,
         status: "pending",
@@ -283,6 +286,7 @@ describe("runCronsScheduler", () => {
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        noConcurrent: false,
         scheduled_for: nextScheduledFor1,
         started_at: null,
         status: "pending",
@@ -295,6 +299,7 @@ describe("runCronsScheduler", () => {
         created_at: nextCronScheduler,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        noConcurrent: false,
         scheduled_for: nextScheduledFor2,
         started_at: null,
         status: "pending",
@@ -313,6 +318,7 @@ describe("startCronScheduler", () => {
         logger: {
           debug: vi.fn() as any,
           info: vi.fn() as any,
+          warn: vi.fn() as any,
           error: vi.fn() as any,
           child: vi.fn() as any,
         },
@@ -367,6 +373,7 @@ describe("startCronScheduler", () => {
         worker_id: null,
         scheduled_for: data.scheduled_for,
         name: data.name,
+        noConcurrent: false,
       };
     };
 
@@ -421,6 +428,7 @@ describe("startCronScheduler", () => {
         logger: {
           debug: vi.fn() as any,
           info: vi.fn() as any,
+          warn: vi.fn() as any,
           error: vi.fn() as any,
           child: vi.fn() as any,
         },

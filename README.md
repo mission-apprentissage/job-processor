@@ -44,6 +44,7 @@ type JobDef = {
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
   resumable?: boolean;
   tag?: string | null;
+  noConcurrent?: boolean;
 };
 ```
 
@@ -51,6 +52,7 @@ type JobDef = {
 - **onJobExited** : Fonction asynchrone appelée lorsque la tâche se termine, avec le dernier traitement du job en paramètre. Cette méthode est également appelé en cas de crash.
 - **resumable** : Indique si la tâche peut être reprise après un redémarrage (par défaut: `false`).
 - **tag** : Une chaîne permettant d'attribuer un job à un worker spécifique (par défaut: `null`).
+- **noConcurrent** : Empêche l'exécution simultanée de jobs avec le même nom. Si `true` et qu'un conflit existe, le job est créé comme `skipped` (par défaut: `false`). Voir [Contrôle de concurrence](docs/CONCURRENCY.md).
 
 #### `CronDef`
 
@@ -63,6 +65,7 @@ type CronDef = {
   checkinMargin?: number;
   maxRuntimeInMinutes?: number;
   tag?: string | null;
+  noConcurrent?: boolean;
 };
 ```
 
@@ -73,6 +76,7 @@ type CronDef = {
 - **checkinMargin**: Tolérance en minutes pour le délai entre l'heure planifiée et l'heure d'exécution effective.
 - **maxRuntimeInMinutes** : Durée maximale d'exécution avant interruption forcée.
 - **tag** : Une chaîne permettant d'attribuer une tâche à un worker spécifique.
+- **noConcurrent** : Empêche l'exécution simultanée de tâches CRON avec le même nom. Recommandé pour les CRON longues durées (par défaut: `false`). Voir [Contrôle de concurrence](docs/CONCURRENCY.md).
 
 ## Configuration Worker Tags
 
@@ -110,3 +114,8 @@ jobs: {
   }
 }
 ```
+
+## Documentation détaillée
+
+- [Exécution CRON](docs/CRON.md) - Planification et exécution des tâches périodiques
+- [Contrôle de concurrence](docs/CONCURRENCY.md) - Gestion de l'exécution simultanée des jobs

@@ -11,7 +11,7 @@ import { executeJob, reportJobCrash } from "./worker.ts";
 
 vi.mock("../options.ts");
 vi.mock("../signal/signal.ts");
-vi.mock("../setup.ts", async (importOriginal) => {
+vi.mock("../logger.ts", async (importOriginal) => {
   const mod = await importOriginal();
   return {
     // @ts-expect-error not properly typed

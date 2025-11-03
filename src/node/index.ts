@@ -2,7 +2,7 @@ import { captureException } from "@sentry/node";
 import type { IJobsSimple } from "../common/model.ts";
 import { cronsInit, startCronScheduler } from "./crons/crons.ts";
 import { createJobSimple } from "./data/actions.ts";
-import { getLogger } from "./setup.ts";
+import { getLogger } from "./logger.ts";
 import { startHeartbeat, startSyncHeartbeat } from "./worker/heartbeat.ts";
 import { runJobProcessor } from "./worker/processor.ts";
 import { executeJob } from "./worker/worker.ts";

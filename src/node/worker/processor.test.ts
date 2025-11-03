@@ -18,6 +18,7 @@ describe("runJobProcessor", () => {
     const logger = {
       debug: vi.fn() as any,
       info: vi.fn() as any,
+      warn: vi.fn() as any,
       error: vi.fn() as any,
       child: () => logger,
     };
@@ -64,6 +65,7 @@ describe("runJobProcessor", () => {
         _id: expect.anything(),
         created_at: expect.any(Date),
         name: "test",
+        noConcurrent: false,
         payload: null,
         scheduled_for: expect.any(Date),
         status: "finished",
@@ -104,6 +106,7 @@ describe("runJobProcessor", () => {
         _id: expect.anything(),
         created_at: expect.any(Date),
         name: "test",
+        noConcurrent: false,
         payload: null,
         scheduled_for: expect.any(Date),
         status: "errored",
@@ -144,6 +147,7 @@ describe("runJobProcessor", () => {
         _id: expect.anything(),
         created_at: expect.any(Date),
         name: "test",
+        noConcurrent: false,
         payload: null,
         scheduled_for: expect.any(Date),
         status: "errored",

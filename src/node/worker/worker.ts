@@ -2,9 +2,9 @@ import * as Sentry from "@sentry/node";
 import { formatDuration, intervalToDuration } from "date-fns";
 import type { IJobsCronTask, IJobsSimple } from "../../common/model.ts";
 import { getCronTaskJob, getSimpleJob, updateJob } from "../data/actions.ts";
-import type { CronDef, ILogger, JobDef } from "../setup.ts";
-import { getLogger } from "../setup.ts";
 import { getOptions } from "../options.ts";
+import type { CronDef, ILogger, JobDef } from "../setup.ts";
+import { getLogger } from "../logger.ts";
 import { clearJobKillSignal, getJobKillSignal } from "../signal/signal.ts";
 import { notifySentryJobEnd, notifySentryJobStart } from "./sentry.ts";
 

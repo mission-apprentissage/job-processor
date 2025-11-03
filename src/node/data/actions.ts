@@ -18,6 +18,7 @@ import type {
 } from "../../common/model.ts";
 import { ZJob } from "../../common/model.ts";
 import { getOptions } from "../options.ts";
+import { getLogger } from "../logger.ts";
 import { workerId } from "../worker/workerId.ts";
 
 const jobCollectionName = "job_processor.jobs";
@@ -51,7 +52,7 @@ async function executeMigrations() {
 }
 
 async function createIndexes() {
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     getJobCollection().createIndexes(
       [
         { key: { type: 1, scheduled_for: 1 } },
@@ -63,6 +64,28 @@ async function createIndexes() {
           key: { ended_at: 1 },
           // 90 days
           expireAfterSeconds: 3600 * 24 * 90,
+        },
+        // Unique partial index for simple jobs with noConcurrent
+        {
+          key: { type: 1, name: 1 },
+          name: "simple_noConcurrent_unique",
+          unique: true,
+          partialFilterExpression: {
+            type: "simple",
+            noConcurrent: true,
+            status: { $in: ["pending", "running"] },
+          },
+        },
+        // Unique partial index for cron_task with noConcurrent
+        {
+          key: { type: 1, name: 1 },
+          name: "cron_task_noConcurrent_unique",
+          unique: true,
+          partialFilterExpression: {
+            type: "cron_task",
+            noConcurrent: true,
+            status: { $in: ["pending", "running", "paused"] },
+          },
         },
       ],
       { background: true },
@@ -80,6 +103,19 @@ async function createIndexes() {
       { background: true },
     ),
   ]);
+
+  // Log any index creation failures
+  const failures = results.filter((r) => r.status === "rejected");
+  if (failures.length > 0) {
+    failures.forEach((result, index) => {
+      if (result.status === "rejected") {
+        getLogger().error(
+          { error: result.reason, indexGroup: index },
+          "Failed to create database indexes",
+        );
+      }
+    });
+  }
 }
 
 async function createCollectionIfDoesNotExist(jobCollectionName: string) {
@@ -138,6 +174,9 @@ export const createJobSimple = async ({
 }: CreateJobSimpleParams): Promise<IJobsSimple> => {
   const now = new Date();
 
+  const jobDef = getOptions().jobs[name];
+  const noConcurrent = jobDef?.noConcurrent ?? false;
+
   const job: IJobsSimple = {
     _id: new ObjectId(),
     name,
@@ -150,8 +189,56 @@ export const createJobSimple = async ({
     sync,
     worker_id: sync ? workerId : null,
     started_at: sync ? now : null,
+    noConcurrent,
   };
-  await getJobCollection().insertOne(job);
+
+  try {
+    await getJobCollection().insertOne(job);
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err && err.code === 11000) {
+      // Duplicate prevented by index: insert as skipped
+      const existing = await getJobCollection().findOne<IJobsSimple>(
+        {
+          type: "simple",
+          name,
+          noConcurrent: true,
+        },
+        {
+          sort: { _id: -1 }, // Get most recent job with this name
+        },
+      );
+
+      const skippedJob: IJobsSimple = {
+        ...job,
+        status: "skipped",
+        ended_at: now,
+        output: {
+          duration: "--",
+          result: null,
+          error: null,
+          skip_metadata: {
+            reason: "noConcurrent_conflict",
+            conflicting_job_id: existing?._id ?? null,
+            skipped_at: now,
+          },
+        },
+      };
+
+      await getJobCollection().insertOne(skippedJob);
+
+      getLogger().warn(
+        {
+          skippedJob: skippedJob._id,
+          jobName: name,
+          conflictingJob: existing?._id,
+        },
+        "noConcurrent: Job skipped due to conflict",
+      );
+
+      return skippedJob;
+    }
+    throw err;
+  }
   return job;
 };
 
@@ -189,8 +276,10 @@ export const createJobCronTask = async ({
 }: CreateJobCronTaskParams): Promise<IJobsCronTask> => {
   const now = new Date();
 
-  const job: IJobsCronTask = {
-    _id: new ObjectId(),
+  const cronDef = getOptions().crons[name];
+  const noConcurrent = cronDef?.noConcurrent ?? false;
+
+  const job: Omit<IJobsCronTask, "_id"> = {
     name,
     type: "cron_task",
     status: "pending",
@@ -200,9 +289,62 @@ export const createJobCronTask = async ({
     ended_at: null,
     scheduled_for,
     worker_id: null,
+    noConcurrent,
   };
-  await getJobCollection().insertOne(job);
-  return job;
+
+  const jobWithId: IJobsCronTask = {
+    ...job,
+    _id: new ObjectId(),
+  } as IJobsCronTask;
+  try {
+    await getJobCollection().insertOne(jobWithId);
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err && err.code === 11000) {
+      // Duplicate prevented by index: insert as skipped
+      const existing = await getJobCollection().findOne<IJobsCronTask>(
+        {
+          type: "cron_task",
+          name,
+          noConcurrent: true,
+        },
+        {
+          sort: { _id: -1 }, // Get most recent task with this name
+        },
+      );
+
+      const skippedTask: IJobsCronTask = {
+        ...job,
+        _id: new ObjectId(),
+        status: "skipped",
+        ended_at: now,
+        output: {
+          duration: "--",
+          result: null,
+          error: null,
+          skip_metadata: {
+            reason: "noConcurrent_conflict",
+            conflicting_job_id: existing?._id ?? null,
+            skipped_at: now,
+          },
+        },
+      } as IJobsCronTask;
+
+      await getJobCollection().insertOne(skippedTask);
+
+      getLogger().warn(
+        {
+          skippedTask: skippedTask._id,
+          jobName: name,
+          conflictingJob: existing?._id,
+        },
+        "noConcurrent: CRON task skipped due to conflict",
+      );
+
+      return skippedTask;
+    }
+    throw err;
+  }
+  return jobWithId;
 };
 
 export const findJobCron = async (
@@ -321,7 +463,11 @@ export async function pickNextJob(): Promise<
         },
       },
     ],
-    { sort: { scheduled_for: 1 }, includeResultMetadata: false },
+    {
+      sort: { scheduled_for: 1 },
+      returnDocument: "after",
+      includeResultMetadata: false,
+    },
   ) as Promise<IJobsCronTask | IJobsSimple | null>;
 }
 

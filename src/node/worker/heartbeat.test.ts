@@ -36,6 +36,7 @@ beforeAll(async () => {
     logger: {
       debug: vi.fn() as any,
       info: vi.fn() as any,
+      warn: vi.fn() as any,
       error: vi.fn() as any,
       child: vi.fn() as any,
     },
