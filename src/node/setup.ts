@@ -11,8 +11,6 @@ export interface ILogger {
   debug(msg: string): unknown;
   info(data: Record<string, unknown>, msg: string): unknown;
   info(msg: string): unknown;
-  warn(data: Record<string, unknown>, msg: string): unknown;
-  warn(msg: string): unknown;
   child(data: Record<string, unknown>): ILogger;
   error(data: Record<string, unknown>, msg: string): unknown;
 }

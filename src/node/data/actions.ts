@@ -248,7 +248,7 @@ export const createJobSimple = async ({
 
       await getJobCollection().insertOne(skippedJob);
 
-      getLogger().warn(
+      getLogger().info(
         {
           skippedJob: skippedJob._id,
           jobName: name,
@@ -356,7 +356,7 @@ export const createJobCronTask = async ({
 
       await getJobCollection().insertOne(skippedTask);
 
-      getLogger().warn(
+      getLogger().info(
         {
           skippedTask: skippedTask._id,
           jobName: name,
