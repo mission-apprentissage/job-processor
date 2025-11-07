@@ -378,7 +378,7 @@ describe("detectExitedJobs", () => {
 
 describe("concurrency feature", () => {
   describe("simple jobs", () => {
-    it.only("should skip job when concurrency mode is exclusive and conflict exists", async () => {
+    it("should skip job when concurrency mode is exclusive and conflict exists", async () => {
       vi.mocked(getOptions).mockReturnValue({
         ...getOptions(),
         jobs: {
