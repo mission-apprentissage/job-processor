@@ -62,7 +62,7 @@ Exemples :
 
 ### `maxRuntimeInMinutes`
 
-Durée maximale d'exécution avant interruption forcée.
+Durée max avant que le job ne soit considéré en erreur par Sentry. L'exécution du job n'est pas interrompu.
 
 ```ts
 maxRuntimeInMinutes: 30; // Maximum 30 minutes
