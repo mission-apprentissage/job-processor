@@ -105,7 +105,7 @@ function createSimpleJob(
     updated_at: now,
     created_at: now,
     worker_id: null,
-    noConcurrent: false,
+    concurrency: { mode: "concurrent" },
     ...data,
   };
 }
@@ -125,7 +125,7 @@ function createCronTaskJob(
     updated_at: now,
     created_at: now,
     worker_id: null,
-    noConcurrent: false,
+    concurrency: { mode: "concurrent" },
     ...data,
   };
 }
@@ -376,22 +376,22 @@ describe("detectExitedJobs", () => {
   });
 });
 
-describe("noConcurrent feature", () => {
+describe("concurrency feature", () => {
   describe("simple jobs", () => {
-    it.only("should skip job when noConcurrent is true and conflict exists", async () => {
+    it.only("should skip job when concurrency mode is exclusive and conflict exists", async () => {
       vi.mocked(getOptions).mockReturnValue({
         ...getOptions(),
         jobs: {
-          noConcurrentJob: {
+          exclusiveJob: {
             handler: vi.fn() as any,
-            noConcurrent: true,
+            concurrency: { mode: "exclusive" },
             tag: null,
           },
         },
       });
 
       const job1 = await createJobSimple({
-        name: "noConcurrentJob",
+        name: "exclusiveJob",
         payload: {},
         scheduled_for: now,
         sync: false,
@@ -404,9 +404,9 @@ describe("noConcurrent feature", () => {
       );
 
       // Try to create another job with same name
-      // With noConcurrent: true, should be created as "skipped" immediately
+      // With exclusive mode, should be created as "skipped" immediately
       const job2 = await createJobSimple({
-        name: "noConcurrentJob",
+        name: "exclusiveJob",
         payload: { name: "Moroine" },
         scheduled_for: now,
         sync: false,
@@ -420,13 +420,13 @@ describe("noConcurrent feature", () => {
       });
     });
 
-    it("should allow concurrent jobs when noConcurrent is false", async () => {
+    it("should allow concurrent jobs when concurrency mode is concurrent", async () => {
       vi.mocked(getOptions).mockReturnValue({
         ...getOptions(),
         jobs: {
           concurrentJob: {
             handler: vi.fn() as any,
-            noConcurrent: false,
+            concurrency: { mode: "concurrent" },
             tag: null,
           },
         },
@@ -460,21 +460,21 @@ describe("noConcurrent feature", () => {
   });
 
   describe("CRON tasks", () => {
-    it("should skip CRON task when noConcurrent is true and conflict exists", async () => {
+    it("should skip CRON task when concurrency mode is exclusive and conflict exists", async () => {
       vi.mocked(getOptions).mockReturnValue({
         ...getOptions(),
         crons: {
-          noConcurrentCron: {
+          exclusiveCron: {
             cron_string: "* * * * *",
             handler: vi.fn() as any,
-            noConcurrent: true,
+            concurrency: { mode: "exclusive" },
             tag: null,
           },
         },
       });
 
       const task1 = await createJobCronTask({
-        name: "noConcurrentCron",
+        name: "exclusiveCron",
         scheduled_for: now,
       });
 
@@ -486,7 +486,7 @@ describe("noConcurrent feature", () => {
 
       // Try to create another task with same name
       const task2 = await createJobCronTask({
-        name: "noConcurrentCron",
+        name: "exclusiveCron",
         scheduled_for: now,
       });
 

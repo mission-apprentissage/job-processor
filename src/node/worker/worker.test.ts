@@ -83,6 +83,7 @@ describe("executeJob", () => {
         type: "simple",
         status: "running",
         sync: false,
+        concurrency: { mode: "concurrent" },
         payload: { name: "Moroine" },
         output: null,
         scheduled_for: now,
@@ -173,6 +174,7 @@ describe("executeJob", () => {
         type: "simple",
         status: "running",
         sync: false,
+        concurrency: { mode: "concurrent" },
         payload: { name: "Moroine" },
         output: null,
         scheduled_for: now,
@@ -267,6 +269,7 @@ describe("executeJob", () => {
         type: "simple",
         status: "running",
         sync: false,
+        concurrency: { mode: "concurrent" },
         payload: { name: "Moroine" },
         output: null,
         scheduled_for: now,
@@ -366,6 +369,7 @@ describe("executeJob", () => {
         updated_at: now,
         created_at: now,
         worker_id: workerId,
+        concurrency: { mode: "concurrent" },
       };
 
       const jobUpdates: Partial<IJobsCronTask>[] = [];
@@ -455,6 +459,7 @@ describe("executeJob", () => {
         updated_at: now,
         created_at: now,
         worker_id: workerId,
+        concurrency: { mode: "concurrent" },
       };
 
       const jobUpdates: Partial<IJobsCronTask>[] = [];
@@ -545,6 +550,7 @@ describe("reportJobCrash", () => {
           type: "simple",
           status: "errored",
           sync: false,
+          concurrency: { mode: "concurrent" },
           payload: { name: "Moroine" },
           output: {
             duration: "--",
@@ -591,6 +597,7 @@ describe("reportJobCrash", () => {
           type: "simple",
           status: "errored",
           sync: false,
+          concurrency: { mode: "concurrent" },
           payload: { name: "Moroine" },
           output: {
             duration: "--",
@@ -637,6 +644,7 @@ describe("reportJobCrash", () => {
           type: "simple",
           status: "errored",
           sync: false,
+          concurrency: { mode: "concurrent" },
           payload: { name: "Moroine" },
           output: {
             duration: "--",
@@ -696,6 +704,7 @@ describe("reportJobCrash", () => {
           updated_at: now,
           created_at: new Date(now.getTime() - 900_000),
           worker_id: null,
+          concurrency: { mode: "concurrent" },
         };
 
         await expect(reportJobCrash(job)).resolves.toBeUndefined();
@@ -741,6 +750,7 @@ describe("reportJobCrash", () => {
           updated_at: now,
           created_at: new Date(now.getTime() - 900_000),
           worker_id: null,
+          concurrency: { mode: "concurrent" },
         };
 
         await expect(reportJobCrash(job)).resolves.toBeUndefined();
@@ -786,6 +796,7 @@ describe("reportJobCrash", () => {
           updated_at: now,
           created_at: new Date(now.getTime() - 900_000),
           worker_id: null,
+          concurrency: { mode: "concurrent" },
         };
 
         await expect(reportJobCrash(job)).resolves.toBeUndefined();

@@ -9,6 +9,7 @@ import type {
 } from "mongodb";
 import { zodToMongoSchema } from "zod-mongodb-schema";
 import type {
+  Concurrency,
   IJob,
   IJobsCron,
   IJobsCronTask,
@@ -52,6 +53,9 @@ async function executeMigrations() {
 }
 
 async function createIndexes() {
+  const SIMPLE_EXCLUSIVE_INDEX = "simple_exclusive_unique";
+  const CRON_TASK_EXCLUSIVE_INDEX = "cron_task_exclusive_unique";
+
   const results = await Promise.allSettled([
     getJobCollection().createIndexes(
       [
@@ -65,25 +69,25 @@ async function createIndexes() {
           // 90 days
           expireAfterSeconds: 3600 * 24 * 90,
         },
-        // Unique partial index for simple jobs with noConcurrent
+        // Unique partial index for simple jobs with exclusive concurrency mode
         {
           key: { type: 1, name: 1 },
-          name: "simple_noConcurrent_unique",
+          name: SIMPLE_EXCLUSIVE_INDEX,
           unique: true,
           partialFilterExpression: {
             type: "simple",
-            noConcurrent: true,
-            status: { $in: ["pending", "running"] },
+            "concurrency.mode": "exclusive",
+            status: { $in: ["pending", "running", "paused"] },
           },
         },
-        // Unique partial index for cron_task with noConcurrent
+        // Unique partial index for cron_task with exclusive concurrency mode
         {
           key: { type: 1, name: 1 },
-          name: "cron_task_noConcurrent_unique",
+          name: CRON_TASK_EXCLUSIVE_INDEX,
           unique: true,
           partialFilterExpression: {
             type: "cron_task",
-            noConcurrent: true,
+            "concurrency.mode": "exclusive",
             status: { $in: ["pending", "running", "paused"] },
           },
         },
@@ -115,6 +119,21 @@ async function createIndexes() {
         );
       }
     });
+  }
+
+  // verify critical indexes (for exclusivity) exist
+  const existingIndexes = await getJobCollection().listIndexes().toArray();
+  const existingNames = existingIndexes.map((idx) => idx.name);
+  const missingIndexes = [
+    SIMPLE_EXCLUSIVE_INDEX,
+    CRON_TASK_EXCLUSIVE_INDEX,
+  ].filter((name) => !existingNames.includes(name));
+
+  if (missingIndexes.length > 0) {
+    throw new Error(
+      `Critical exclusive concurrency indexes missing: ${missingIndexes.join(", ")}. ` +
+        `Check for duplicate documents or permission issues.`,
+    );
   }
 }
 
@@ -175,7 +194,10 @@ export const createJobSimple = async ({
   const now = new Date();
 
   const jobDef = getOptions().jobs[name];
-  const noConcurrent = jobDef?.noConcurrent ?? false;
+  const concurrency: Concurrency = {
+    mode: "concurrent",
+    ...jobDef?.concurrency,
+  };
 
   const job: IJobsSimple = {
     _id: new ObjectId(),
@@ -189,7 +211,7 @@ export const createJobSimple = async ({
     sync,
     worker_id: sync ? workerId : null,
     started_at: sync ? now : null,
-    noConcurrent,
+    concurrency,
   };
 
   try {
@@ -201,7 +223,7 @@ export const createJobSimple = async ({
         {
           type: "simple",
           name,
-          noConcurrent: true,
+          "concurrency.mode": "exclusive",
         },
         {
           sort: { _id: -1 }, // Get most recent job with this name
@@ -232,7 +254,7 @@ export const createJobSimple = async ({
           jobName: name,
           conflictingJob: existing?._id,
         },
-        "noConcurrent: Job skipped due to conflict",
+        "Exclusive concurrency: Job skipped due to conflict",
       );
 
       return skippedJob;
@@ -277,7 +299,10 @@ export const createJobCronTask = async ({
   const now = new Date();
 
   const cronDef = getOptions().crons[name];
-  const noConcurrent = cronDef?.noConcurrent ?? false;
+  const concurrency: Concurrency = {
+    mode: "concurrent",
+    ...cronDef?.concurrency,
+  };
 
   const job: Omit<IJobsCronTask, "_id"> = {
     name,
@@ -289,7 +314,7 @@ export const createJobCronTask = async ({
     ended_at: null,
     scheduled_for,
     worker_id: null,
-    noConcurrent,
+    concurrency,
   };
 
   const jobWithId: IJobsCronTask = {
@@ -305,7 +330,7 @@ export const createJobCronTask = async ({
         {
           type: "cron_task",
           name,
-          noConcurrent: true,
+          "concurrency.mode": "exclusive",
         },
         {
           sort: { _id: -1 }, // Get most recent task with this name
@@ -337,7 +362,7 @@ export const createJobCronTask = async ({
           jobName: name,
           conflictingJob: existing?._id,
         },
-        "noConcurrent: CRON task skipped due to conflict",
+        "Exclusive concurrency: CRON task skipped due to conflict",
       );
 
       return skippedTask;

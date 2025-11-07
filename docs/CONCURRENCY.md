@@ -20,7 +20,7 @@ Par défaut, les jobs peuvent s'exécuter de manière concurrente. Pour empêche
 jobs: {
   "generate-report": {
     handler: async (job) => { /* ... */ },
-    noConcurrent: true  // Un seul job actif à la fois
+    concurrency: { mode: "exclusive" }  // Un seul job actif à la fois
   }
 }
 ```
@@ -32,29 +32,30 @@ crons: {
   "daily-export": {
     cron_string: "0 2 * * *",
     handler: async (signal) => { /* ... */ },
-    noConcurrent: true  // Recommandé pour les CRON longues durées
+    concurrency: { mode: "exclusive" }  // Recommandé pour les CRON longues durées
   }
 }
 ```
 
 ## Comportement
 
-### Avec `noConcurrent: false` (par défaut)
+### Avec `concurrency: { mode: "concurrent" }` (par défaut)
 
 Autorise l'exécution simultanée. Pas de restriction.
 
 ```ts
-// Pas de configuration = allow implicite
+// Pas de configuration = mode concurrent implicite
 jobs: {
   "send-email": {
     handler: async (job) => { /* ... */ }
+    // concurrency: { mode: "concurrent" } est appliqué par défaut
   }
 }
 ```
 
-### Avec `noConcurrent: true`
+### Avec `concurrency: { mode: "exclusive" }`
 
-Le job est créé avec le statut `skipped` si un autre est déjà `pending` ou `running`.
+Le job est créé avec le statut `skipped` si un autre est déjà `pending`, `running` ou `paused`.
 
 **Comportement :**
 
@@ -77,7 +78,7 @@ jobs: {
     handler: async (job) => {
       // Génération longue durée
     },
-    noConcurrent: true
+    concurrency: { mode: "exclusive" }
   }
 }
 ```
@@ -93,7 +94,7 @@ crons: {
     handler: async (signal) => {
       // Export volumineux
     },
-    noConcurrent: true  // Recommandé
+    concurrency: { mode: "exclusive" }  // Recommandé
   }
 }
 ```
@@ -118,12 +119,14 @@ Lorsqu'un job est ignoré, les informations de conflit sont enregistrées :
 
 ## Notes importantes
 
-### Jobs simples
+### Comportement de l'index unique
 
-- Les jobs en statut `paused` ne bloquent **pas** la création de nouveaux jobs
-- Seuls les jobs `pending` et `running` sont considérés
+- L'index MongoDB unique partiel garantit l'exclusivité de manière atomique
+- Les jobs avec `concurrency: { mode: "exclusive" }` ne peuvent pas avoir plusieurs instances `pending`, `running` ou `paused` simultanément
+- En cas de conflit, le nouveau job est immédiatement créé avec le statut `skipped`
 
-### Tâches CRON
+### Jobs simples vs Tâches CRON
 
-- Les tâches en statut `paused` **bloquent** la création de nouvelles tâches
-- Empêche les chevauchements d'exécution pour les CRON longues durées
+- Les deux types de jobs suivent le même comportement pour le mode exclusif
+- Le statut `paused` bloque la création de nouveaux jobs en mode exclusif
+- L'index couvre les statuts `pending`, `running` et `paused` pour empêcher les chevauchements

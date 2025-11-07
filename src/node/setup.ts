@@ -1,5 +1,9 @@
 import type { Db } from "mongodb";
-import type { IJobsCronTask, IJobsSimple } from "../common/model.ts";
+import type {
+  IJobsCronTask,
+  IJobsSimple,
+  Concurrency,
+} from "../common/model.ts";
 import { configureDb } from "./data/actions.ts";
 import { setOptions } from "./options.ts";
 
@@ -19,8 +23,8 @@ export type JobDef<T extends string = string> = {
   onJobExited?: (job: IJobsSimple) => Promise<unknown>;
   resumable?: boolean;
   tag?: T | null;
-  // Prevent concurrent execution: only one pending/running job with same name allowed
-  noConcurrent?: boolean;
+  // Prevent concurrent execution: only one pending/running/paused cron_task with same name allowed.
+  concurrency?: Concurrency;
 };
 
 export type CronDef<T extends string = string> = {
@@ -33,7 +37,7 @@ export type CronDef<T extends string = string> = {
   checkinMargin?: number;
   tag?: T | null;
   // Prevent concurrent execution: only one pending/running/paused cron_task with same name allowed.
-  noConcurrent?: boolean;
+  concurrency?: Concurrency;
 };
 
 export type JobProcessorOptions<T extends string = string> = {

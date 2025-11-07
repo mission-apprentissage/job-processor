@@ -4,6 +4,11 @@ import { zObjectIdMini } from "zod-mongodb-schema";
 
 const zCronName = z.string();
 
+export const ZConcurrencyMode = z.enum(["concurrent", "exclusive"]);
+export const ZConcurrency = z.object({
+  mode: ZConcurrencyMode,
+});
+
 export const ZJobSimple = z.object({
   _id: zObjectIdMini,
   name: z.string(),
@@ -39,7 +44,7 @@ export const ZJobSimple = z.object({
   updated_at: z.date(),
   created_at: z.date(),
   worker_id: z.nullable(zObjectIdMini),
-  noConcurrent: z.nullish(z.boolean()),
+  concurrency: z.optional(ZConcurrency),
 });
 
 export const ZJobCron = z.object({
@@ -87,7 +92,7 @@ export const ZJobCronTask = z.object({
   ),
   worker_id: z.nullable(zObjectIdMini),
   sentry_id: z.nullish(z.string()),
-  noConcurrent: z.nullish(z.boolean()),
+  concurrency: z.optional(ZConcurrency),
 });
 
 export const ZJob = z.discriminatedUnion("type", [
@@ -122,6 +127,9 @@ export function isJobSimpleOrCronTask(
 }
 
 export type CronName = z.output<typeof zCronName>;
+
+export type ConcurrencyMode = z.output<typeof ZConcurrencyMode>;
+export type Concurrency = z.output<typeof ZConcurrency>;
 
 export type IJob = z.output<typeof ZJob>;
 export type IJobsSimple = z.output<typeof ZJobSimple>;
