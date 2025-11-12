@@ -66,6 +66,7 @@ function createCronTaskJob(
     created_at: now,
     worker_id: null,
     scheduled_for: now,
+    concurrency: { mode: "concurrent" },
     ...data,
   };
 }
@@ -254,6 +255,7 @@ describe("runCronsScheduler", () => {
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        concurrency: { mode: "concurrent" },
         scheduled_for: nextScheduledFor1,
         started_at: null,
         status: "pending",
@@ -283,6 +285,7 @@ describe("runCronsScheduler", () => {
         created_at: updatedAt,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        concurrency: { mode: "concurrent" },
         scheduled_for: nextScheduledFor1,
         started_at: null,
         status: "pending",
@@ -295,6 +298,7 @@ describe("runCronsScheduler", () => {
         created_at: nextCronScheduler,
         ended_at: null,
         name: "Daily at 9am Paris time",
+        concurrency: { mode: "concurrent" },
         scheduled_for: nextScheduledFor2,
         started_at: null,
         status: "pending",
@@ -367,6 +371,7 @@ describe("startCronScheduler", () => {
         worker_id: null,
         scheduled_for: data.scheduled_for,
         name: data.name,
+        concurrency: { mode: "concurrent" },
       };
     };
 

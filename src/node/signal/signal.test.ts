@@ -95,6 +95,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       const jobSignal = getJobKillSignal(jobId);
@@ -129,6 +130,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       await getSignalCollection().insertOne({
@@ -167,6 +169,7 @@ describe.each([
           started_at: null,
           scheduled_for: new Date(),
           sync: false,
+          concurrency: { mode: "concurrent" },
         });
 
         await getSignalCollection().insertOne({
@@ -202,6 +205,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       const jobSignal = getJobKillSignal(jobId);
@@ -237,6 +241,7 @@ describe.each([
           ended_at: new Date(),
           scheduled_for: new Date(),
           sync: false,
+          concurrency: { mode: "concurrent" },
         });
 
         await getSignalCollection().insertOne({
@@ -271,6 +276,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       await getSignalCollection().insertOne({
@@ -311,6 +317,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       const jobSignal = getJobKillSignal(jobId);
@@ -336,6 +343,7 @@ describe.each([
           started_at: null,
           scheduled_for: new Date(),
           sync: false,
+          concurrency: { mode: "concurrent" },
         });
 
         await killJob(jobId);
@@ -359,6 +367,7 @@ describe.each([
         started_at: new Date(),
         scheduled_for: new Date(),
         sync: false,
+        concurrency: { mode: "concurrent" },
       });
 
       await killJob(jobId);
@@ -386,6 +395,7 @@ describe.each([
           ended_at: new Date(),
           scheduled_for: new Date(),
           sync: false,
+          concurrency: { mode: "concurrent" },
         });
 
         await killJob(jobId);

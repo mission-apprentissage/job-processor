@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { detectExitedJobs, pickNextJob } from "../data/actions.ts";
-import { getLogger } from "../setup.ts";
+import { getLogger } from "../logger.ts";
 import { sleep } from "../../utils/sleep.ts";
 import { executeJob, reportJobCrash } from "./worker.ts";
 

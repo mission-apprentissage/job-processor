@@ -3,7 +3,7 @@ import { MongoError, ObjectId } from "mongodb";
 import { getJobCollection, getSignalCollection } from "../data/actions.ts";
 import type { ISignal } from "../../common/model.ts";
 import { workerId } from "../worker/workerId.ts";
-import { getLogger } from "../setup.ts";
+import { getLogger } from "../logger.ts";
 
 export async function processSignal(signal: ISignal): Promise<void> {
   switch (signal.type) {

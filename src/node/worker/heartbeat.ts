@@ -2,7 +2,7 @@ import os from "node:os";
 import { EventEmitter } from "node:events";
 import { captureException, flush } from "@sentry/node";
 import { getWorkerCollection } from "../data/actions.ts";
-import { getLogger } from "../setup.ts";
+import { getLogger } from "../logger.ts";
 import { getOptions } from "../options.ts";
 import { workerId } from "./workerId.ts";
 

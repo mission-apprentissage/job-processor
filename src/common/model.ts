@@ -4,6 +4,11 @@ import { zObjectIdMini } from "zod-mongodb-schema";
 
 const zCronName = z.string();
 
+export const ZConcurrencyMode = z.enum(["concurrent", "exclusive"]);
+export const ZConcurrency = z.object({
+  mode: ZConcurrencyMode,
+});
+
 export const ZJobSimple = z.object({
   _id: zObjectIdMini,
   name: z.string(),
@@ -15,6 +20,7 @@ export const ZJobSimple = z.object({
     "errored",
     "paused",
     "killed",
+    "skipped",
   ]),
   sync: z.boolean(),
   payload: z.nullish(z.record(z.string(), z.unknown())),
@@ -23,6 +29,13 @@ export const ZJobSimple = z.object({
       duration: z.string(),
       result: z.unknown(),
       error: z.nullable(z.string()),
+      skip_metadata: z.nullish(
+        z.object({
+          reason: z.enum(["noConcurrent_conflict", "other"]),
+          conflicting_job_id: z.nullable(zObjectIdMini),
+          skipped_at: z.date(),
+        }),
+      ),
     }),
   ),
   scheduled_for: z.date(),
@@ -31,6 +44,7 @@ export const ZJobSimple = z.object({
   updated_at: z.date(),
   created_at: z.date(),
   worker_id: z.nullable(zObjectIdMini),
+  concurrency: z.optional(ZConcurrency),
 });
 
 export const ZJobCron = z.object({
@@ -55,6 +69,7 @@ export const ZJobCronTask = z.object({
     "errored",
     "paused",
     "killed",
+    "skipped",
   ]),
   scheduled_for: z.date(),
   started_at: z.nullish(z.date()),
@@ -66,10 +81,18 @@ export const ZJobCronTask = z.object({
       duration: z.string(),
       result: z.unknown(),
       error: z.nullable(z.string()),
+      skip_metadata: z.nullish(
+        z.object({
+          reason: z.enum(["noConcurrent_conflict", "other"]),
+          conflicting_job_id: z.nullable(zObjectIdMini),
+          skipped_at: z.date(),
+        }),
+      ),
     }),
   ),
   worker_id: z.nullable(zObjectIdMini),
   sentry_id: z.nullish(z.string()),
+  concurrency: z.optional(ZConcurrency),
 });
 
 export const ZJob = z.discriminatedUnion("type", [
@@ -104,6 +127,9 @@ export function isJobSimpleOrCronTask(
 }
 
 export type CronName = z.output<typeof zCronName>;
+
+export type ConcurrencyMode = z.output<typeof ZConcurrencyMode>;
+export type Concurrency = z.output<typeof ZConcurrency>;
 
 export type IJob = z.output<typeof ZJob>;
 export type IJobsSimple = z.output<typeof ZJobSimple>;

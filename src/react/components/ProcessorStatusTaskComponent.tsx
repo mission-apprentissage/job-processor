@@ -30,6 +30,8 @@ export function getTaskStatus(task: Jsonify<IJob> | null | undefined) {
       return "En pause";
     case "killed":
       return "Annulé";
+    case "skipped":
+      return "Ignoré";
     case "active":
       throw new Error("Active status is not expected for tasks");
     default:

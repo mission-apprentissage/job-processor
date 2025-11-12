@@ -4,6 +4,9 @@ import type { IJobsCronTask, IJobsSimple, IWorker } from "../index.ts";
 import { workerId } from "../worker/workerId.ts";
 import { getOptions } from "../options.ts";
 import {
+  configureDb,
+  createJobCronTask,
+  createJobSimple,
   detectExitedJobs,
   getCronTaskJob,
   getJobCollection,
@@ -60,6 +63,8 @@ beforeAll(async () => {
     },
   });
 
+  await configureDb();
+
   return async () => {
     await client?.close();
   };
@@ -99,6 +104,7 @@ function createSimpleJob(
     updated_at: now,
     created_at: now,
     worker_id: null,
+    concurrency: { mode: "concurrent" },
     ...data,
   };
 }
@@ -118,6 +124,7 @@ function createCronTaskJob(
     updated_at: now,
     created_at: now,
     worker_id: null,
+    concurrency: { mode: "concurrent" },
     ...data,
   };
 }
@@ -168,7 +175,12 @@ describe("pickNextJob", () => {
       ] as const;
       await getJobCollection().insertMany([...jobs]);
 
-      expect(await pickNextJob()).toEqual(jobs[3]);
+      expect(await pickNextJob()).toEqual({
+        ...jobs[3],
+        worker_id: workerId,
+        status: "running",
+        started_at: now,
+      });
       expect(await getCronTaskJob(jobs[3]._id)).toEqual({
         ...jobs[3],
         worker_id: workerId,
@@ -187,7 +199,12 @@ describe("pickNextJob", () => {
       ] as const;
       await getJobCollection().insertMany([...jobs]);
 
-      expect(await pickNextJob()).toEqual(jobs[0]);
+      expect(await pickNextJob()).toEqual({
+        ...jobs[0],
+        worker_id: workerId,
+        status: "running",
+        started_at: past,
+      });
       expect(await getSimpleJob(jobs[0]._id)).toEqual({
         ...jobs[0],
         worker_id: workerId,
@@ -211,8 +228,18 @@ describe("pickNextJob", () => {
       ] as const;
       await getJobCollection().insertMany([...jobs]);
 
-      expect(await pickNextJob()).toEqual(jobs[1]);
-      expect(await pickNextJob()).toEqual(jobs[0]);
+      expect(await pickNextJob()).toEqual({
+        ...jobs[1],
+        worker_id: workerId,
+        status: "running",
+        started_at: now,
+      });
+      expect(await pickNextJob()).toEqual({
+        ...jobs[0],
+        worker_id: workerId,
+        status: "running",
+        started_at: now,
+      });
       expect(await pickNextJob()).toBe(null);
     });
   });
@@ -345,5 +372,129 @@ describe("detectExitedJobs", () => {
     expect(await detectExitedJobs()).toEqual(null);
 
     expect(await getJobCollection().find({}).toArray()).toEqual(expectedJobs);
+  });
+});
+
+describe("concurrency feature", () => {
+  describe("simple jobs", () => {
+    it("should skip job when concurrency mode is exclusive and conflict exists", async () => {
+      vi.mocked(getOptions).mockReturnValue({
+        ...getOptions(),
+        jobs: {
+          exclusiveJob: {
+            handler: vi.fn() as any,
+            concurrency: { mode: "exclusive" },
+            tag: null,
+          },
+        },
+      });
+
+      const job1 = await createJobSimple({
+        name: "exclusiveJob",
+        payload: {},
+        scheduled_for: now,
+        sync: false,
+      });
+
+      // Mark first job as running
+      await getJobCollection().updateOne(
+        { _id: job1._id },
+        { $set: { status: "running", worker_id: workerId } },
+      );
+
+      // Try to create another job with same name
+      // With exclusive mode, should be created as "skipped" immediately
+      const job2 = await createJobSimple({
+        name: "exclusiveJob",
+        payload: { name: "Moroine" },
+        scheduled_for: now,
+        sync: false,
+      });
+
+      // Job2 should be created as "skipped" (not pending)
+      expect(job2.status).toBe("skipped");
+      expect(job2.output?.skip_metadata).toMatchObject({
+        reason: "noConcurrent_conflict",
+        conflicting_job_id: job1._id,
+      });
+    });
+
+    it("should allow concurrent jobs when concurrency mode is concurrent", async () => {
+      vi.mocked(getOptions).mockReturnValue({
+        ...getOptions(),
+        jobs: {
+          concurrentJob: {
+            handler: vi.fn() as any,
+            concurrency: { mode: "concurrent" },
+            tag: null,
+          },
+        },
+      });
+
+      const job1 = await createJobSimple({
+        name: "concurrentJob",
+        payload: {},
+        scheduled_for: now,
+        sync: false,
+      });
+
+      // Mark first job as running
+      await getJobCollection().updateOne(
+        { _id: job1._id },
+        { $set: { status: "running", worker_id: workerId } },
+      );
+
+      // Try to create another job with same name
+      const job2 = await createJobSimple({
+        name: "concurrentJob",
+        payload: {},
+        scheduled_for: now,
+        sync: false,
+      });
+
+      // Job2 should be created as "pending" (concurrent allowed)
+      expect(job2.status).toBe("pending");
+      expect(job2._id.toString()).not.toBe(job1._id.toString());
+    });
+  });
+
+  describe("CRON tasks", () => {
+    it("should skip CRON task when concurrency mode is exclusive and conflict exists", async () => {
+      vi.mocked(getOptions).mockReturnValue({
+        ...getOptions(),
+        crons: {
+          exclusiveCron: {
+            cron_string: "* * * * *",
+            handler: vi.fn() as any,
+            concurrency: { mode: "exclusive" },
+            tag: null,
+          },
+        },
+      });
+
+      const task1 = await createJobCronTask({
+        name: "exclusiveCron",
+        scheduled_for: now,
+      });
+
+      // Mark first task as running
+      await getJobCollection().updateOne(
+        { _id: task1._id },
+        { $set: { status: "running", worker_id: workerId } },
+      );
+
+      // Try to create another task with same name
+      const task2 = await createJobCronTask({
+        name: "exclusiveCron",
+        scheduled_for: now,
+      });
+
+      // Task2 should be created as "skipped"
+      expect(task2.status).toBe("skipped");
+      expect(task2.output?.skip_metadata).toMatchObject({
+        reason: "noConcurrent_conflict",
+        conflicting_job_id: task1._id,
+      });
+    });
   });
 });
