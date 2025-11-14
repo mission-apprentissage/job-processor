@@ -343,7 +343,7 @@ describe("executeJob", () => {
         crons: {
           hello: {
             cron_string: "*",
-            handler: async () => {
+            handler: async (_signal, _job) => {
               vi.advanceTimersByTime(2_000);
 
               return `Hello`;
@@ -432,7 +432,7 @@ describe("executeJob", () => {
         logger: vi.fn() as any,
         crons: {
           hello: {
-            handler: async () => {
+            handler: async (_signal, _job) => {
               vi.advanceTimersByTime(2_000);
 
               throw new Error("Ooops");
@@ -675,7 +675,7 @@ describe("reportJobCrash", () => {
           crons: {
             hello: {
               cron_string: "*",
-              handler: async () => {
+              handler: async (_signal, _job) => {
                 vi.advanceTimersByTime(2_000);
 
                 return `Hello`;
@@ -720,7 +720,7 @@ describe("reportJobCrash", () => {
           crons: {
             hello: {
               cron_string: "*",
-              handler: async () => {
+              handler: async (_signal, _job) => {
                 vi.advanceTimersByTime(2_000);
 
                 return `Hello`;
@@ -766,7 +766,7 @@ describe("reportJobCrash", () => {
           crons: {
             hello: {
               cron_string: "*",
-              handler: async () => {
+              handler: async (_signal, _job) => {
                 vi.advanceTimersByTime(2_000);
 
                 return `Hello`;

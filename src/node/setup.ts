@@ -27,7 +27,7 @@ export type JobDef<T extends string = string> = {
 
 export type CronDef<T extends string = string> = {
   cron_string: string;
-  handler: (signal: AbortSignal) => Promise<unknown>;
+  handler: (signal: AbortSignal, job: IJobsCronTask) => Promise<unknown>;
   // Particularly usefull to handle unexpected errors, crash & interruptions
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;

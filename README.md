@@ -59,7 +59,7 @@ type JobDef = {
 ```ts
 type CronDef = {
   cron_string: string;
-  handler: (signal: AbortSignal) => Promise<unknown>;
+  handler: (signal: AbortSignal, job: IJobsCronTask) => Promise<unknown>;
   onJobExited?: (job: IJobsCronTask) => Promise<unknown>;
   resumable?: boolean;
   checkinMargin?: number;

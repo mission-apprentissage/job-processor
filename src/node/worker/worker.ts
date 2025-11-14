@@ -211,7 +211,7 @@ async function runner(
       if (!cronDef) {
         throw new Error("Cron not found");
       }
-      result = await cronDef.handler(signal);
+      result = await cronDef.handler(signal, job);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
