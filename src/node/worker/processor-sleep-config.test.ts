@@ -9,7 +9,6 @@ import {
 } from "vitest";
 import { MongoClient } from "mongodb";
 import { initJobProcessor } from "../setup.ts";
-import * as sleepModule from "../../utils/sleep.ts";
 import { runJobProcessor } from "./processor.ts";
 
 describe("runJobProcessor - custom sleep time configuration", () => {
@@ -55,22 +54,21 @@ describe("runJobProcessor - custom sleep time configuration", () => {
 
   it("should use custom sleep time when configured", async () => {
     const ctrl = new AbortController();
-    const sleepSpy = vi.spyOn(sleepModule, "sleep");
+    const startTime = Date.now();
 
     // Start the processor - it should sleep when there are no jobs
     const processorPromise = runJobProcessor(ctrl.signal);
 
-    // Wait for the processor to call sleep
-    await vi.waitFor(
-      () => {
-        expect(sleepSpy).toHaveBeenCalledWith(1000, ctrl.signal);
-      },
-      { timeout: 100 },
-    );
+    // Advance timers by the custom sleep duration
+    await vi.advanceTimersByTimeAsync(1000);
+
+    const elapsedTime = Date.now() - startTime;
+
+    // Verify the elapsed time matches the custom sleep time
+    expect(elapsedTime).toBeGreaterThanOrEqual(1000);
+    expect(elapsedTime).toBeLessThan(1100);
 
     ctrl.abort();
     await processorPromise;
-
-    sleepSpy.mockRestore();
   });
 });
