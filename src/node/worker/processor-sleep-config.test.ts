@@ -1,7 +1,16 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { MongoClient } from "mongodb";
 import { initJobProcessor } from "../setup.ts";
-import { processorEventEmitter, runJobProcessor } from "./processor.ts";
+import * as sleepModule from "../../utils/sleep.ts";
+import { runJobProcessor } from "./processor.ts";
 
 describe("runJobProcessor - custom sleep time configuration", () => {
   let client: MongoClient | null;
@@ -28,7 +37,7 @@ describe("runJobProcessor - custom sleep time configuration", () => {
         },
       },
       crons: {},
-      sleepTimeWhenNoJobsInMs: 1000, // 1 second for faster test
+      sleepTimeWhenNoJobsInMs: 1000,
     });
 
     return async () => {
@@ -36,27 +45,32 @@ describe("runJobProcessor - custom sleep time configuration", () => {
     };
   });
 
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("should use custom sleep time when configured", async () => {
     const ctrl = new AbortController();
-    const startTime = Date.now();
+    const sleepSpy = vi.spyOn(sleepModule, "sleep");
 
     // Start the processor - it should sleep when there are no jobs
-    const teardown = runJobProcessor(ctrl.signal);
+    const processorPromise = runJobProcessor(ctrl.signal);
 
-    // Wait for the processor to enter sleep (no jobs in queue)
-    const onContinue = new Promise((resolve) =>
-      processorEventEmitter.once("continue", resolve),
+    // Wait for the processor to call sleep
+    await vi.waitFor(
+      () => {
+        expect(sleepSpy).toHaveBeenCalledWith(1000, ctrl.signal);
+      },
+      { timeout: 100 },
     );
 
-    await onContinue;
-    const elapsedTime = Date.now() - startTime;
-
-    // The processor should have slept for approximately 1000ms
-    // Allow some tolerance for execution time
-    expect(elapsedTime).toBeGreaterThanOrEqual(900);
-    expect(elapsedTime).toBeLessThan(1500);
-
     ctrl.abort();
-    await teardown;
+    await processorPromise;
+
+    sleepSpy.mockRestore();
   });
 });
