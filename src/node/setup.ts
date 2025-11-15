@@ -44,6 +44,7 @@ export type JobProcessorOptions<T extends string = string> = {
   jobs: Record<string, JobDef>;
   crons: Record<string, CronDef>;
   workerTags?: T[] | null;
+  sleepTimeWhenNoJobsInMs?: number;
 };
 
 export { getLogger } from "./logger.ts";
