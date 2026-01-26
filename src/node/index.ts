@@ -131,4 +131,9 @@ export {
   getProcessorStatus,
 } from "./monitoring/monitoring.ts";
 
-export { getSimpleJob } from "./data/actions.ts";
+export {
+  getSimpleJob,
+  findJobCron,
+  findJobs,
+  findSimpleJob,
+} from "./data/actions.ts";
