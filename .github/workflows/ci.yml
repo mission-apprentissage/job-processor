@@ -7,7 +7,6 @@ on:
         description: Code coverrage token
         required: true
 jobs:
-
   npm-packages-check:
     name: Check npm packages
     runs-on: ubuntu-latest
