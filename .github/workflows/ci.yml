@@ -7,9 +7,30 @@ on:
         description: Code coverrage token
         required: true
 jobs:
+
+  npm-packages-check:
+    name: Check npm packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Clone mna-npm-check repository
+        uses: actions/checkout@v4
+        with:
+          repository: mission-apprentissage/mna-npm-check
+          path: mna-npm-check
+
+      - name: Analyze npm dependancies
+        run: mna-npm-check/npm-check.sh -p .
+
   tests:
+    name: Tests
+    if: ${{ success() }}
+    needs: ["npm-packages-check"]
     timeout-minutes: 10
-    name: "Tests"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project
