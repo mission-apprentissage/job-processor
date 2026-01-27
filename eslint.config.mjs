@@ -119,15 +119,25 @@ export default defineConfig([
   },
   {
     files: [["src/react/**", ALL_FILES]],
-    ...reactHooks.configs["recommended-latest"],
+    ...reactHooks.configs.flat["recommended-latest"],
   },
   {
     files: [["src/react/**", ALL_FILES]],
     ...reactPlugin.configs.flat.recommended,
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
   },
   {
     files: [["src/react/**", ALL_FILES]],
     ...reactPlugin.configs.flat["jsx-runtime"],
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
   },
   {
     files: [["src/react/**", ALL_FILES]],
